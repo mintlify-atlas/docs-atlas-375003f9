@@ -1,0 +1,182 @@
+---
+title: "Clorabase Java — entry point class"
+description: "Reference for the Clorabase Java SDK entry point: getInstance, getDatabase, getStorage, getConfig, and getAPIQuota with parameter types and return values."
+---
+
+`clorabase.sdk.java.Clorabase` is the singleton entry point for the Clorabase Java SDK. It handles authentication, reads your project's `config.json` from GitHub, and provides access to the database, storage, and quota APIs.
+
+## getInstance
+
+```java
+public static Clorabase getInstance(String username, String token, String project) throws Exception
+```
+
+Returns the singleton `Clorabase` instance. Initializes the SDK on the first call by reading `<project>/config.json` from GitHub. Subsequent calls with the same project name return the cached instance without re-fetching.
+
+<ParamField path="username" type="string" required>
+  Your Clorabase account username. Must not be blank.
+</ParamField>
+
+<ParamField path="token" type="string" required>
+  A GitHub personal access token with `repo` scope for the Clorabase project repository. Must not be blank.
+</ParamField>
+
+<ParamField path="project" type="string" required>
+  The name of the project as it appears in your GitHub repository. Must not be blank.
+</ParamField>
+
+<ResponseField name="Clorabase" type="Clorabase">
+  The singleton instance for the given project.
+</ResponseField>
+
+**Throws**
+
+- `IllegalArgumentException` — if any parameter is blank.
+- `IllegalStateException` — if the project does not exist or `config.json` is missing at `<project>/config.json`.
+- `RuntimeException` — if `config.json` cannot be parsed.
+
+```java
+Clorabase db = Clorabase.getInstance("rahilkhan", "ghp_xxxx", "my-project");
+```
+
+---
+
+## getDatabase
+
+```java
+public Collection getDatabase()
+```
+
+Returns the root `Collection` for the project database. The root is located at `<project>/db` in the repository.
+
+<ResponseField name="Collection" type="Collection">
+  Root collection reference. Use it to navigate sub-collections and documents.
+</ResponseField>
+
+```java
+Collection root = db.getDatabase();
+Collection users = root.collection("users");
+```
+
+---
+
+## getStorage
+
+```java
+public ClorabaseStorage getStorage() throws IllegalStateException
+```
+
+Returns the root `ClorabaseStorage` instance for the project. The storage root maps to `<project>/storage` in the repository.
+
+<ResponseField name="ClorabaseStorage" type="ClorabaseStorage">
+  Root storage reference. Use it to navigate directories and manage files.
+</ResponseField>
+
+**Throws**
+
+- `IllegalStateException` — if storage has not been configured for the project.
+
+```java
+ClorabaseStorage storage = db.getStorage();
+ClorabaseStorage images = storage.directory("images");
+```
+
+---
+
+## getConfig
+
+```java
+public Config getConfig()
+```
+
+Returns the parsed `config.json` for the project. The config is loaded once during `getInstance` and cached for the lifetime of the instance.
+
+<ResponseField name="Config" type="Config">
+  Parsed project configuration.
+
+  <Expandable title="Config fields">
+    <ResponseField name="project" type="string">
+      The project name as stored in `config.json`.
+    </ResponseField>
+    <ResponseField name="username" type="string">
+      The account username field. Declared in `Config` but not populated from `config.json` by the SDK — this field will be `null` unless set manually.
+    </ResponseField>
+    <ResponseField name="version" type="string">
+      The SDK or project schema version declared in `config.json`.
+    </ResponseField>
+    <ResponseField name="isStorageConfigured" type="boolean">
+      `true` if blob/release storage has been set up for this project. Corresponds to the `blobConfigured` key in `config.json`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```java
+Config config = db.getConfig();
+System.out.println(config.project);           // "my-project"
+System.out.println(config.isStorageConfigured); // true / false
+```
+
+---
+
+## getAPIQuota
+
+```java
+public Quota getAPIQuota() throws IOException
+```
+
+Returns the current GitHub API rate limit state for the authenticated token. Reads from the GitHub Core rate limit endpoint.
+
+<ResponseField name="Quota" type="Quota">
+  Current rate limit snapshot.
+
+  <Expandable title="Quota fields">
+    <ResponseField name="remaining" type="int">
+      Number of API requests remaining in the current window.
+    </ResponseField>
+    <ResponseField name="resetSeconds" type="long">
+      Unix epoch seconds at which the rate limit window resets.
+    </ResponseField>
+    <ResponseField name="resetTime" type="Date">
+      `java.util.Date` constructed from `resetSeconds * 1000`. Convenience field for human-readable reset time.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Throws**
+
+- `IOException` — if the GitHub API request fails.
+
+```java
+Quota quota = db.getAPIQuota();
+System.out.printf("Remaining requests: %d%n", quota.remaining);
+System.out.printf("Resets at: %s%n", quota.resetTime);
+```
+
+---
+
+## Example: initializing the SDK
+
+```java
+import clorabase.sdk.java.Clorabase;
+import clorabase.sdk.java.Config;
+import clorabase.sdk.java.Quota;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Clorabase app = Clorabase.getInstance(
+            "rahilkhan",
+            System.getenv("CLORABASE_TOKEN"),
+            "my-project"
+        );
+
+        Config config = app.getConfig();
+        System.out.println("Project: " + config.project);
+        System.out.println("Version: " + config.version);
+        System.out.println("Storage ready: " + config.isStorageConfigured);
+
+        Quota quota = app.getAPIQuota();
+        System.out.println("API calls remaining: " + quota.remaining);
+        System.out.println("Resets: " + quota.resetTime);
+    }
+}
+```

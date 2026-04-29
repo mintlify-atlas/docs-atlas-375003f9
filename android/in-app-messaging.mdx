@@ -1,0 +1,130 @@
+---
+title: "In-app messaging for Android with Clorabase"
+description: "Show SIMPLE, COUPON, or PROMO dialogs to Android users by pushing message JSON to your GitHub repo. Supports expiry, show-once, and custom click handlers."
+---
+
+## Overview
+
+Clorabase In-App Messaging lets you push messages to your users without a new app release. You create JSON files in your GitHub repository at `<project>/messages/`, and the SDK fetches them at runtime and displays them as dialogs inside your app.
+
+Messages are sorted by `timestamp` (newest first) and shown in a queue. The SDK handles expiry, deduplication, and image loading automatically.
+
+---
+
+## Dialog styles
+
+Each message declares a `style` field that controls the dialog layout.
+
+| Style | Appearance |
+|-------|-----------|
+| `SIMPLE` | Centered card dialog with a blue primary button. Dismissible by tapping outside. |
+| `COUPON` | Image banner at the top, green primary button, and a secondary **Close** button. Not dismissible by tapping outside. |
+| `PROMO` | Orange header bar with a product image and a floating **X** dismiss button. Not dismissible by tapping outside. |
+
+---
+
+## Message schema
+
+Each message is a JSON file stored in `<project>/messages/`. The following fields are supported:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | `string` | Yes | Heading text shown at the top of the dialog. |
+| `message` | `string` | Yes | Body text of the dialog. |
+| `image` | `string` | No | URL of an image to display in the dialog (loaded at fetch time). |
+| `link` | `string` | No | URL opened in a browser when the primary button is tapped. |
+| `timestamp` | `long` | Yes | Unix epoch milliseconds. Used to sort messages newest-first. |
+| `expiry` | `long` | No | Unix epoch milliseconds. Messages whose `expiry` is in the past are silently skipped. Set to `0` or omit to never expire. |
+| `show_once` | `boolean` | No | When `true`, the message is shown at most once per device. Defaults to `false`. |
+| `style` | `string` | No | Dialog style: `"SIMPLE"`, `"COUPON"`, or `"PROMO"`. Defaults to `"SIMPLE"`. |
+
+**Example message file** (`<project>/messages/welcome.json`):
+
+```json
+{
+  "title": "Welcome back!",
+  "message": "Check out our latest offers and save big this week.",
+  "image": "https://example.com/banner.png",
+  "link": "https://example.com/offers",
+  "timestamp": 1714348800000,
+  "expiry": 1716940800000,
+  "show_once": true,
+  "style": "COUPON"
+}
+```
+
+---
+
+## Usage
+
+### Auto-show via `Clorabase` (recommended)
+
+Call `initInAppMessaging` on your `Clorabase` instance. It fetches all valid pending messages and immediately shows the newest one.
+
+```java
+// In Application.onCreate() or MainActivity.onCreate()
+Clorabase clorabase = Clorabase.getInstance(username, token, project);
+clorabase.initInAppMessaging(context);
+```
+
+### Manual control via `InAppMessaging`
+
+If you need finer control over when messages are fetched or shown, obtain the `InAppMessaging` service directly. This does **not** auto-show any message.
+
+```java
+InAppMessaging messaging = clorabase.getMessagingService(context);
+```
+
+#### `fetch()`
+
+Fetches all valid, non-expired messages from the repository and populates an internal queue sorted newest-first.
+
+```java
+messaging.fetch().addOnSuccessListener(queue -> {
+    // queue contains all pending Message objects
+});
+```
+
+Returns `Task<Queue<Message>>`.
+
+#### `show(context)`
+
+Displays the next message from the queue in a dialog. Call after `fetch()` completes.
+
+```java
+messaging.show(activity);
+```
+
+Pass an `Activity` context. The call is a no-op if the activity is finishing or destroyed.
+
+#### `fetchAndShow(context)`
+
+Convenience method that calls `fetch()` and then `show()` in one step.
+
+```java
+messaging.fetchAndShow(activity);
+```
+
+#### `setOnPrimaryClickListener(listener)`
+
+Override the default primary button behavior. By default, tapping the primary button opens `link` in a browser (if set).
+
+```java
+messaging.setOnPrimaryClickListener((message, dialog) -> {
+    // custom logic, e.g. navigate in-app
+    dialog.dismiss();
+});
+```
+
+---
+
+## `show_once` and expiry behavior
+
+- **`show_once: true`** — after the user taps the primary button, the message's SHA is stored in `SharedPreferences`. The message is never shown again on that device.
+- **`expiry`** — evaluated at fetch time against the device clock. Any message whose `expiry` timestamp is in the past is excluded from the queue entirely and never displayed.
+
+---
+
+## Managing messages
+
+Messages are managed through the **Clorabase Console** app, which provides a GUI for creating, editing, and deleting message JSON files in your GitHub repository.

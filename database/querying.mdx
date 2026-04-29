@@ -1,0 +1,289 @@
+---
+title: "Query documents in Clorastore"
+description: "Use Clorastore's client-side query engine to filter, sort, and retrieve documents from a collection using predicates and comparisons."
+---
+
+## How queries work
+
+Clorastore does not have a server-side query engine. When you execute a query, the SDK:
+
+1. Fetches **all documents** in the collection from GitHub.
+2. Loads each document's data into memory.
+3. Filters or sorts the results in-memory using the criteria you specified.
+
+This means query performance scales linearly with the number of documents in the collection. Results are not paginated automatically.
+
+<Warning>
+Queries on large collections will be slow because every document must be fetched individually. Keep frequently queried collections small, and split data across sub-collections where possible.
+</Warning>
+
+## Creating a query
+
+Call `.query()` on any collection reference to obtain a `Query` object. The document fetch begins immediately in the background when `query()` is called.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    ClorastoreQuery query = db.collection("users").query();
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    Query query = db.collection("users").query();
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Filter methods
+
+### where()
+
+Accepts a custom `Predicate<Map<String, Object>>` lambda. Use this for complex conditions that the built-in helpers do not cover.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").query()
+        .where(data -> {
+            Object active = data.get("active");
+            return Boolean.TRUE.equals(active);
+        })
+        .addOnSuccessListener(docs -> {
+            for (ClorastoreDocument doc : docs) {
+                // process active users
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> activeDocs = db.collection("users").query()
+            .where(data -> Boolean.TRUE.equals(data.get("active")));
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### whereGreater()
+
+Returns documents where the given numeric field is strictly greater than `value`. Documents missing the field are excluded.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").query()
+        .whereGreater("score", 50)
+        .addOnSuccessListener(docs -> {
+            Log.d("Clorastore", "High scorers: " + docs.size());
+        })
+        .addOnFailureListener(e -> Log.e("Clorastore", "Query failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> highScorers = db.collection("users").query()
+            .whereGreater("score", 50);
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### whereLess()
+
+Returns documents where the given numeric field is strictly less than `value`.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").query()
+        .whereLess("score", 10)
+        .addOnSuccessListener(docs -> {
+            // users with score < 10
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> lowScorers = db.collection("users").query()
+            .whereLess("score", 10);
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### whereEqual()
+
+Returns documents where the given field equals `value` using `Objects.equals()`. Works for any supported type: `String`, `Number`, `Boolean`, or `null`.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    // Find users with a specific plan
+    db.collection("users").query()
+        .whereEqual("plan", "premium")
+        .addOnSuccessListener(docs -> {
+            for (ClorastoreDocument doc : docs) {
+                // process premium users
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> premiumUsers = db.collection("users").query()
+            .whereEqual("plan", "premium");
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Sorting
+
+### orderBy()
+
+Returns up to `limit` documents sorted in **ascending order** by a numeric field. Documents that do not have the field, or where the field is not a number, are excluded from the result.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    // Top 10 users by score, ascending
+    db.collection("users").query()
+        .orderBy("score", 10)
+        .addOnSuccessListener(docs -> {
+            for (ClorastoreDocument doc : docs) {
+                // docs[0] has the lowest score
+            }
+        })
+        .addOnFailureListener(e -> Log.e("Clorastore", "Query failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> topUsers = db.collection("users").query()
+            .orderBy("score", 10);
+        // topUsers.get(0) has the lowest score
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+`orderBy()` sorts in ascending order. To get the highest values first, reverse the resulting list after the call.
+</Note>
+
+---
+
+## Practical examples
+
+### Filter by score, then read document data
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("leaderboard").query()
+        .whereGreater("score", 100)
+        .addOnSuccessListener(docs -> {
+            for (ClorastoreDocument doc : docs) {
+                doc.getData().addOnSuccessListener(data -> {
+                    String username = (String) data.get("username");
+                    int score = ((Number) data.get("score")).intValue();
+                    Log.d("Clorastore", username + ": " + score);
+                });
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> qualifiers = db.collection("leaderboard").query()
+            .whereGreater("score", 100);
+
+        for (Document doc : qualifiers) {
+            Map<String, Object> data = doc.getData();
+            System.out.println(data.get("username") + ": " + data.get("score"));
+        }
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Top 5 users by score
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("leaderboard").query()
+        .orderBy("score", 5)
+        .addOnSuccessListener(docs -> {
+            // docs sorted lowest to highest — reverse for descending
+            Collections.reverse(docs);
+            for (ClorastoreDocument doc : docs) {
+                Log.d("Clorastore", "Top user: " + doc.coreDocument.name);
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> top5 = db.collection("leaderboard").query()
+            .orderBy("score", 5);
+
+        Collections.reverse(top5); // ascending → descending
+        for (Document doc : top5) {
+            System.out.println("Top user: " + doc.name);
+        }
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Filter by equality across multiple fields using where()
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").query()
+        .where(data -> "premium".equals(data.get("plan"))
+                    && Boolean.TRUE.equals(data.get("active")))
+        .addOnSuccessListener(docs -> {
+            Log.d("Clorastore", "Active premium users: " + docs.size());
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> results = db.collection("users").query()
+            .where(data -> "premium".equals(data.get("plan"))
+                        && Boolean.TRUE.equals(data.get("active")));
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>

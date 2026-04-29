@@ -1,0 +1,79 @@
+---
+title: "Clorabase: Free BaaS for Android & Java apps"
+description: "Clorabase turns your GitHub repository into a NoSQL database and cloud storage backend for Android and Java apps — no server required."
+---
+
+Clorabase is a lightweight, serverless **Backend-as-a-Service (BaaS)** that uses GitHub as your entire backend infrastructure. Instead of setting up servers or paying for cloud services, you store app data, files, and messages directly in a private GitHub repository. It's completely free and requires only a GitHub account.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your first read and write working in under 5 minutes
+  </Card>
+  <Card title="Setup guide" icon="gear" href="/setup">
+    Create your GitHub token and initialize your project
+  </Card>
+  <Card title="Database" icon="database" href="/database/overview">
+    Store and query structured data with Clorastore
+  </Card>
+  <Card title="Storage" icon="cloud" href="/storage/overview">
+    Upload and retrieve files up to 50 MB (or unlimited via blobs)
+  </Card>
+  <Card title="Android SDK" icon="mobile" href="/api/android/clorabase">
+    Async Task-based API for Android apps
+  </Card>
+  <Card title="Java SDK" icon="code" href="/api/java/clorabase">
+    Synchronous API for pure Java applications
+  </Card>
+</CardGroup>
+
+## Why Clorabase?
+
+Clorabase is designed for developers who want a simple, zero-cost backend for small Android or Java apps — hobby projects, prototypes, or apps with a small user base.
+
+<CardGroup cols={2}>
+  <Card title="Zero cost" icon="circle-dollar-to-slot">
+    Fully powered by GitHub's free tier. No billing, no credit card, no paid plans.
+  </Card>
+  <Card title="Data ownership" icon="lock">
+    Your data lives in your own GitHub repository. You control it completely.
+  </Card>
+  <Card title="No server setup" icon="server">
+    No backend to deploy. GitHub handles infrastructure, availability, and storage.
+  </Card>
+  <Card title="AES encryption" icon="shield">
+    All database documents are encrypted with AES-128 before being pushed to GitHub.
+  </Card>
+</CardGroup>
+
+## How it works
+
+Clorabase stores all your app data inside a private GitHub repository called `Clorabase-projects`. Each project you create gets a folder in that repo containing:
+
+- **`db/`** — encrypted JSON document files for your database
+- **`storage/`** — binary files or pointers to GitHub Release assets
+- **`messages/`** — in-app message payloads for Android
+- **`updates/`** — version metadata for in-app update prompts
+- **`config.json`** — project metadata
+
+The SDK communicates directly with the GitHub API from your app — there is no intermediate server.
+
+## Get started
+
+<Steps>
+  <Step title="Generate a GitHub token">
+    Create a Personal Access Token with `repo` scope in your GitHub settings. See the [setup guide](/setup) for exact steps.
+  </Step>
+  <Step title="Add the dependency">
+    Add the JitPack repository and the Clorabase dependency to your `build.gradle`. See the [quickstart](/quickstart).
+  </Step>
+  <Step title="Initialize the SDK">
+    Call `Clorabase.getInstance(username, token, project)` once at app startup.
+  </Step>
+  <Step title="Read and write data">
+    Use `getDatabase()` and `getStorage()` to start persisting data immediately.
+  </Step>
+</Steps>
+
+<Note>
+Clorabase is best suited for small apps, hobby projects, and non-commercial use cases. For apps requiring authentication, advanced querying, or millions of users, consider Firebase or Supabase.
+</Note>

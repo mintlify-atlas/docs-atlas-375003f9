@@ -1,0 +1,381 @@
+---
+title: "ClorabaseStorage — Clorabase Java SDK"
+description: "Reference for ClorabaseStorage methods: directory navigation, file upload, blob upload, download, list, and delete in the Clorabase Java SDK."
+---
+
+`clorabase.sdk.java.storage.ClorabaseStorage` represents a directory in the Clorabase storage system, backed by a path in your GitHub repository. Obtain the root instance from [`Clorabase.getStorage()`](/api/java/clorabase#getstorage).
+
+Two storage strategies are available:
+
+- **Regular files** — stored directly as repository content. Suitable for files up to ~50 MB.
+- **Blobs** — uploaded as GitHub Release assets and referenced by a `.ptr` pointer file. Suitable for large binary assets.
+
+---
+
+## directory
+
+```java
+public ClorabaseStorage directory(String name)
+```
+
+Returns a new `ClorabaseStorage` instance representing the named subdirectory. The directory is created implicitly when the first file is written into it.
+
+<ParamField path="name" type="string" required>
+  Name of the subdirectory. Examples: `"images"`, `"documents"`.
+</ParamField>
+
+<ResponseField name="ClorabaseStorage" type="ClorabaseStorage">
+  A new storage instance rooted at `<current path>/<name>`.
+</ResponseField>
+
+```java
+ClorabaseStorage images = storage.directory("images");
+ClorabaseStorage thumbnails = images.directory("thumbnails");
+```
+
+---
+
+## addFile
+
+```java
+public void addFile(byte[] contents, String fileName) throws StorageException
+```
+
+Uploads a small file by encoding the byte array directly into a GitHub repository content API call. Best suited for files up to approximately **1 MB**. For larger files use `uploadFile`.
+
+<ParamField path="contents" type="byte[]" required>
+  Raw file bytes.
+</ParamField>
+
+<ParamField path="fileName" type="string" required>
+  Destination file name within this directory.
+</ParamField>
+
+**Throws** `StorageException` if the file already exists at the path or if the API request fails.
+
+```java
+byte[] avatar = Files.readAllBytes(Path.of("avatar.png"));
+storage.directory("avatars").addFile(avatar, "alice.png");
+```
+
+---
+
+## uploadFile
+
+```java
+public void uploadFile(InputStream file, String fileName, ProgressListener listener)
+```
+
+Streams a file into the repository. Supports files up to **50 MB**. Progress and completion are reported via the `ProgressListener` callback.
+
+<ParamField path="file" type="InputStream" required>
+  Input stream for the file to upload. The stream is closed automatically after upload.
+</ParamField>
+
+<ParamField path="fileName" type="string" required>
+  Destination file name within this directory.
+</ParamField>
+
+<ParamField path="listener" type="ProgressListener" required>
+  Callback to receive upload progress, completion, and error events.
+</ParamField>
+
+**Throws** `RuntimeException` wrapping a `StorageException` with `FILE_TOO_LARGE` if the stream reports more than 50 MB available.
+
+```java
+try (InputStream in = new FileInputStream("report.pdf")) {
+    storage.directory("reports").uploadFile(in, "q1-report.pdf", new ProgressListener() {
+        public void onProgress(long bytesRead, long totalBytes) {
+            System.out.printf("%.0f%%%n", 100.0 * bytesRead / totalBytes);
+        }
+        public void onComplete(String result) {
+            System.out.println("Uploaded: " + result);
+        }
+        public void onError(Exception e) {
+            System.err.println("Upload failed: " + e.getMessage());
+        }
+    });
+}
+```
+
+---
+
+## uploadBlob
+
+```java
+public void uploadBlob(InputStream io, String fileName, ProgressListener listener)
+```
+
+Uploads a large binary file as a **GitHub Release asset** and creates a `.ptr` pointer file in the repository. Consumes **2 API calls**: one to upload the release asset and one to create the pointer. The pointer file is stored as `<fileName>.ptr`.
+
+<ParamField path="io" type="InputStream" required>
+  Input stream for the blob data.
+</ParamField>
+
+<ParamField path="fileName" type="string" required>
+  Asset name. A `.ptr` pointer file will be created at `<directory>/<fileName>.ptr`.
+</ParamField>
+
+<ParamField path="listener" type="ProgressListener" required>
+  Callback for progress, completion (receives the download URL string), and errors.
+</ParamField>
+
+`listener.onError` is called (not thrown) if the blob already exists or if the upload fails.
+
+```java
+try (InputStream in = new FileInputStream("video.mp4")) {
+    storage.directory("videos").uploadBlob(in, "intro.mp4", new ProgressListener() {
+        public void onProgress(long bytesRead, long totalBytes) { /* ... */ }
+        public void onComplete(String downloadUrl) {
+            System.out.println("Blob available at: " + downloadUrl);
+        }
+        public void onError(Exception e) {
+            System.err.println("Blob upload failed: " + e.getMessage());
+        }
+    });
+}
+```
+
+---
+
+## getFile
+
+```java
+public byte[] getFile(String name) throws StorageException
+```
+
+Downloads a regular file and returns its raw bytes.
+
+<ParamField path="name" type="string" required>
+  Name of the file to download within this directory.
+</ParamField>
+
+<ResponseField name="byte[]" type="byte[]">
+  Raw file contents.
+</ResponseField>
+
+**Throws** `StorageException` if the file does not exist or if the download fails.
+
+```java
+byte[] data = storage.directory("avatars").getFile("alice.png");
+Files.write(Path.of("local_alice.png"), data);
+```
+
+---
+
+## getBlobStream
+
+```java
+public InputStream getBlobStream(String name) throws StorageException
+```
+
+Opens a streaming download for a blob. Reads the `.ptr` pointer file to resolve the asset URL and returns an `InputStream` over an HTTP connection.
+
+<ParamField path="name" type="string" required>
+  Name of the pointer file, including the `.ptr` extension. Example: `"intro.mp4.ptr"`.
+</ParamField>
+
+<ResponseField name="InputStream" type="InputStream">
+  Stream over the blob's HTTP response body. Caller is responsible for closing the stream.
+</ResponseField>
+
+**Throws**
+
+- `IllegalArgumentException` if `name` does not end with `.ptr`.
+- `StorageException` if the pointer file is not found or the HTTP download fails.
+
+```java
+try (InputStream stream = storage.directory("videos").getBlobStream("intro.mp4.ptr")) {
+    Files.copy(stream, Path.of("local_intro.mp4"), StandardCopyOption.REPLACE_EXISTING);
+}
+```
+
+---
+
+## getBlobDownloadURL
+
+```java
+public URL getBlobDownloadURL(String name) throws StorageException
+```
+
+Returns the direct download `URL` for a blob without opening a connection. Useful for generating share links or passing URLs to other systems.
+
+<ParamField path="name" type="string" required>
+  Name of the pointer file, including the `.ptr` extension.
+</ParamField>
+
+<ResponseField name="URL" type="java.net.URL">
+  Direct download URL for the blob asset.
+</ResponseField>
+
+**Throws**
+
+- `IllegalArgumentException` if `name` does not end with `.ptr`.
+- `StorageException` if the pointer file is not found.
+
+```java
+URL url = storage.directory("videos").getBlobDownloadURL("intro.mp4.ptr");
+System.out.println("Share this URL: " + url);
+```
+
+---
+
+## delete
+
+```java
+public void delete(String name) throws StorageException
+```
+
+Deletes a regular file from this directory.
+
+<ParamField path="name" type="string" required>
+  Name of the file to delete.
+</ParamField>
+
+**Throws** `StorageException` if the file does not exist or the delete request fails.
+
+```java
+storage.directory("avatars").delete("alice.png");
+```
+
+---
+
+## deleteBlob
+
+```java
+public void deleteBlob(String name) throws StorageException
+```
+
+Deletes a blob by removing both the **GitHub Release asset** and the `.ptr` pointer file. Pass the base name — the `.ptr` extension is appended automatically.
+
+<ParamField path="name" type="string" required>
+  Base name of the blob (without `.ptr`). Example: `"intro.mp4"`.
+</ParamField>
+
+**Throws** `StorageException` if the blob pointer file is not found or either delete operation fails.
+
+```java
+storage.directory("videos").deleteBlob("intro.mp4");
+```
+
+---
+
+## listFiles
+
+```java
+public List<String> listFiles() throws StorageException
+```
+
+Lists all file and subdirectory names in the current directory.
+
+<ResponseField name="List<String>" type="List">
+  Names of files and folders in this directory. May be empty.
+</ResponseField>
+
+**Throws** `StorageException` if the directory does not exist or the API request fails.
+
+```java
+List<String> files = storage.directory("images").listFiles();
+System.out.println(files); // ["alice.png", "bob.png", "thumbnails"]
+```
+
+---
+
+## ProgressListener interface
+
+`clorabase.sdk.java.storage.ProgressListener` is the callback interface used by `uploadFile` and `uploadBlob` to report upload state.
+
+```java
+public interface ProgressListener {
+    void onProgress(long bytesRead, long totalBytes);
+    void onComplete(String result);
+    void onError(Exception e);
+}
+```
+
+<ResponseField name="onProgress" type="void">
+  Called periodically during upload.
+
+  <Expandable title="parameters">
+    <ResponseField name="bytesRead" type="long">
+      Number of bytes transferred so far.
+    </ResponseField>
+    <ResponseField name="totalBytes" type="long">
+      Total file size in bytes.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="onComplete" type="void">
+  Called once when the upload finishes successfully.
+
+  <Expandable title="parameters">
+    <ResponseField name="result" type="String">
+      For `uploadFile`: the path of the created file. For `uploadBlob`: the direct download URL of the release asset.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="onError" type="void">
+  Called if the upload fails.
+
+  <Expandable title="parameters">
+    <ResponseField name="e" type="Exception">
+      The exception describing the failure. May be a `StorageException`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Example: upload and retrieve a blob
+
+```java
+import clorabase.sdk.java.Clorabase;
+import clorabase.sdk.java.storage.ClorabaseStorage;
+import clorabase.sdk.java.storage.ProgressListener;
+
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+public class StorageExample {
+    public static void main(String[] args) throws Exception {
+        Clorabase app = Clorabase.getInstance("rahilkhan", System.getenv("TOKEN"), "my-project");
+        ClorabaseStorage videos = app.getStorage().directory("videos");
+
+        // Upload a large file as a blob
+        try (InputStream in = new FileInputStream("demo.mp4")) {
+            videos.uploadBlob(in, "demo.mp4", new ProgressListener() {
+                public void onProgress(long bytesRead, long totalBytes) {
+                    System.out.printf("Upload progress: %d / %d bytes%n", bytesRead, totalBytes);
+                }
+                public void onComplete(String downloadUrl) {
+                    System.out.println("Blob uploaded. URL: " + downloadUrl);
+                }
+                public void onError(Exception e) {
+                    System.err.println("Upload error: " + e.getMessage());
+                }
+            });
+        }
+
+        // Get the download URL later
+        URL url = videos.getBlobDownloadURL("demo.mp4.ptr");
+        System.out.println("Download: " + url);
+
+        // Stream the blob to disk
+        try (InputStream stream = videos.getBlobStream("demo.mp4.ptr")) {
+            Files.copy(stream, Path.of("demo_local.mp4"), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // List all files in the directory
+        System.out.println("Files: " + videos.listFiles());
+
+        // Clean up
+        videos.deleteBlob("demo.mp4");
+    }
+}
+```

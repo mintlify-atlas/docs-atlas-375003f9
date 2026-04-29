@@ -1,0 +1,264 @@
+---
+title: "Collection — Clorabase Java SDK"
+description: "Reference for the Collection class: navigate sub-collections and documents, list contents, and delete documents in the Clorabase Java SDK."
+---
+
+`clorabase.sdk.java.database.Collection` represents a directory node in the Clorabase database. Collections contain documents and other collections. Obtain the root collection from [`Clorabase.getDatabase()`](/api/java/clorabase#getdatabase).
+
+<Note>
+  You cannot delete a collection through the SDK. To remove one, delete it manually in the GitHub repository.
+</Note>
+
+---
+
+## collection
+
+```java
+public Collection collection(String name)
+```
+
+Returns a reference to the named sub-collection inside this collection. The collection is not created in the repository until a document write occurs inside it.
+
+<ParamField path="name" type="string" required>
+  Collection name. Alphanumeric characters only — no spaces, slashes, dots, or backslashes.
+</ParamField>
+
+<ResponseField name="Collection" type="Collection">
+  Reference to the named sub-collection.
+</ResponseField>
+
+**Throws** `IllegalArgumentException` if `name` contains invalid characters or is empty.
+
+```java
+Collection users = db.getDatabase().collection("users");
+```
+
+---
+
+## collectionAt
+
+```java
+public Collection collectionAt(String path)
+```
+
+Navigates to a collection by a slash-separated relative path. Leading and trailing slashes are stripped automatically.
+
+<ParamField path="path" type="string" required>
+  Slash-separated path relative to the current collection. Each segment must satisfy the same naming rules as `collection(String)`.
+</ParamField>
+
+<ResponseField name="Collection" type="Collection">
+  The collection at the given path. The parent of the returned collection is set to `this`.
+</ResponseField>
+
+```java
+// Equivalent to root.collection("users").collection("admins")
+Collection admins = db.getDatabase().collectionAt("users/admins");
+```
+
+---
+
+## document
+
+```java
+public Document document(String name)
+```
+
+Returns a reference to the named document inside this collection. The name is lowercased and trimmed before use. The document is not created in the repository until you call a write method on it.
+
+<ParamField path="name" type="string" required>
+  Document name. Alphanumeric characters only after lowercasing — no spaces, slashes, or dots.
+</ParamField>
+
+<ResponseField name="Document" type="Document">
+  Reference to the named document.
+</ResponseField>
+
+**Throws** `IllegalArgumentException` if `name` contains invalid characters or is empty.
+
+```java
+Document user = db.getDatabase().collection("users").document("alice");
+```
+
+---
+
+## documentAt
+
+```java
+public Document documentAt(String path)
+```
+
+Returns a document reference by a path relative to this collection. The path must end with `.doc`.
+
+<ParamField path="path" type="string" required>
+  Relative path to the document. Must end with `.doc`. Leading and trailing slashes are stripped automatically. Example: `"profiles/alice.doc"`.
+</ParamField>
+
+<ResponseField name="Document" type="Document">
+  Reference to the document at the given path.
+</ResponseField>
+
+**Throws** `IllegalArgumentException` if `path` does not end with `.doc`.
+
+```java
+Document profile = db.getDatabase().documentAt("users/profiles/alice.doc");
+```
+
+---
+
+## getDocuments
+
+```java
+public List<Document> getDocuments() throws ClorastoreException
+```
+
+Lists all documents directly inside this collection. Files named `index` are excluded from results.
+
+<ResponseField name="List<Document>" type="List">
+  All document references in this collection. May be empty if the collection contains no documents.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the collection does not exist or the GitHub API request fails.
+
+```java
+List<Document> docs = db.getDatabase().collection("users").getDocuments();
+for (Document doc : docs) {
+    System.out.println(doc.getName());
+}
+```
+
+---
+
+## getCollections
+
+```java
+public List<String> getCollections() throws ClorastoreException
+```
+
+Lists the names of all direct sub-collections inside this collection.
+
+<ResponseField name="List<String>" type="List">
+  Names of sub-collections. May be empty.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the collection does not exist or the GitHub API request fails.
+
+```java
+List<String> subCollections = db.getDatabase().collection("users").getCollections();
+System.out.println(subCollections); // ["admins", "guests"]
+```
+
+---
+
+## delete
+
+```java
+public void delete(String name) throws ClorastoreException
+```
+
+Deletes the document with the given name from this collection.
+
+<ParamField path="name" type="string" required>
+  Name of the document to delete (without the `.doc` extension).
+</ParamField>
+
+**Throws** `ClorastoreException` if the document does not exist or the delete request fails.
+
+```java
+db.getDatabase().collection("users").delete("alice");
+```
+
+---
+
+## query
+
+```java
+public Query query()
+```
+
+Creates a new `Query` object scoped to this collection. The query pre-fetches document references in a background thread.
+
+<ResponseField name="Query" type="Query">
+  A new query builder for this collection.
+</ResponseField>
+
+```java
+Query q = db.getDatabase().collection("users").query();
+List<Document> active = q.whereEqual("status", "active");
+```
+
+---
+
+## getParent
+
+```java
+public Collection getParent()
+```
+
+Returns the parent collection of this collection, or `null` if this is the root.
+
+<ResponseField name="Collection" type="Collection">
+  The parent collection, or `null` for the root.
+</ResponseField>
+
+---
+
+## getPath
+
+```java
+public String getPath()
+```
+
+Returns the full path of this collection relative to the database root. Leading slashes are stripped.
+
+<ResponseField name="String" type="string">
+  Full path. Example: `"users/admins"`.
+</ResponseField>
+
+---
+
+## getName
+
+```java
+public String getName()
+```
+
+Returns the name segment of this collection (the last component of the path).
+
+<ResponseField name="String" type="string">
+  Collection name. Example: `"admins"`.
+</ResponseField>
+
+---
+
+## Example: listing and querying a collection
+
+```java
+import clorabase.sdk.java.Clorabase;
+import clorabase.sdk.java.database.Collection;
+import clorabase.sdk.java.database.Document;
+
+import java.util.List;
+
+public class CollectionExample {
+    public static void main(String[] args) throws Exception {
+        Clorabase app = Clorabase.getInstance("rahilkhan", System.getenv("TOKEN"), "my-project");
+        Collection users = app.getDatabase().collection("users");
+
+        // List all documents
+        List<Document> docs = users.getDocuments();
+        System.out.println("Total users: " + docs.size());
+
+        // Navigate into a sub-collection
+        Collection admins = users.collection("admins");
+        System.out.println("Admins path: " + admins.getPath());
+
+        // Delete a document
+        users.delete("olduser");
+
+        // List sub-collections
+        List<String> subs = users.getCollections();
+        System.out.println("Sub-collections: " + subs);
+    }
+}
+```

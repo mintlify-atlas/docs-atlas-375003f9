@@ -1,0 +1,277 @@
+---
+title: "Document — Clorabase Java SDK"
+description: "Reference for Document CRUD methods: getData, fetch, setData, update, put, addItem, removeItem, and delete in the Clorabase Java SDK."
+---
+
+`clorabase.sdk.java.database.Document` represents a single record stored as a `.doc` file in the Clorabase GitHub repository. Each document holds a flat `Map<String, Object>` of fields. Obtain a document reference from a [`Collection`](/api/java/collection).
+
+<Warning>
+  Maximum document size is **2 MB** (after encryption). Supported field types are `String`, `Number`, `Boolean`, `List`, and `null`. Nested `Map` objects are not supported.
+</Warning>
+
+---
+
+## getData
+
+```java
+public Map<String, Object> getData() throws ClorastoreException
+```
+
+Returns the document's field map. Returns the locally cached copy if available; otherwise calls `fetch()` to retrieve the latest version from GitHub.
+
+<ResponseField name="Map<String, Object>" type="Map">
+  The document's field map. Returns an empty map if the document does not exist on the remote.
+</ResponseField>
+
+**Throws** `ClorastoreException` if a network or GitHub API error occurs during fetching.
+
+```java
+Map<String, Object> data = userDoc.getData();
+System.out.println(data.get("name")); // "Alice"
+```
+
+---
+
+## fetch
+
+```java
+public Map<String, Object> fetch() throws ClorastoreException
+```
+
+Always retrieves the latest document data directly from GitHub, bypassing CDN caches by using the latest commit SHA. Subsequent calls within the same **5-second window** return the in-memory cache to avoid rate limit exhaustion.
+
+<ResponseField name="Map<String, Object>" type="Map">
+  Fresh field map from GitHub. Returns an empty map if the document does not exist.
+</ResponseField>
+
+**Throws** `ClorastoreException` on network errors (excluding 404, which returns an empty map).
+
+```java
+// Force a fresh read
+Map<String, Object> fresh = userDoc.fetch();
+```
+
+---
+
+## setData
+
+```java
+public void setData(Map<String, Object> data) throws ClorastoreException
+```
+
+Creates or completely overwrites the document with the provided field map. Automatically appends a `_timestamp` field (Unix epoch ms) to the stored data. Throws if the serialized size exceeds 2 MB.
+
+<ParamField path="data" type="Map<String, Object>" required>
+  Field map to store. Keys must match `[a-zA-Z0-9_]+`. Values must be `String`, `Number`, `Boolean`, `List`, or `null`. Nested maps are not permitted.
+</ParamField>
+
+**Throws**
+
+- `ClorastoreException` with `DOCUMENT_SIZE_EXCEEDED` if the payload exceeds 2 MB.
+- `ClorastoreException` with `INVALID_DATATYPE` if a value type is unsupported.
+
+```java
+Map<String, Object> data = new HashMap<>();
+data.put("name", "Alice");
+data.put("age", 30);
+data.put("active", true);
+
+userDoc.setData(data);
+```
+
+---
+
+## update
+
+```java
+public void update(Map<String, Object> fields) throws ClorastoreException
+```
+
+Merges the provided fields into the existing document. Existing fields not present in `fields` are preserved. Setting a field's value to `null` removes that field.
+
+<ParamField path="fields" type="Map<String, Object>" required>
+  Partial field map. Each entry is merged into the stored document. A `null` value removes the corresponding key.
+</ParamField>
+
+**Throws** `ClorastoreException` if the document does not exist or if the updated document exceeds 2 MB.
+
+```java
+Map<String, Object> patch = new HashMap<>();
+patch.put("age", 31);
+patch.put("lastLogin", System.currentTimeMillis());
+
+userDoc.update(patch);
+```
+
+---
+
+## put
+
+```java
+public void put(String key, Object value) throws ClorastoreException
+```
+
+Upserts a single field in the document. Creates the document if it does not exist. There is a **5-second cooldown** between consecutive `put` calls on the same document — use `update` to batch multiple fields together.
+
+<ParamField path="key" type="string" required>
+  Field name. Must match `[a-zA-Z0-9_]+`.
+</ParamField>
+
+<ParamField path="value" type="Object" required>
+  New value. Must be `String`, `Number`, `Boolean`, `List`, or `null`. Passing `null` removes the field.
+</ParamField>
+
+**Throws**
+
+- `IllegalArgumentException` if `key` contains invalid characters.
+- `ClorastoreException` with `INVALID_DATATYPE` if `value` is an unsupported type.
+- `ClorastoreException` with `TOO_MANY_REQUESTS` if called within 5 seconds of the previous write.
+
+```java
+userDoc.put("score", 99);
+userDoc.put("nickname", null); // removes the "nickname" field
+```
+
+---
+
+## addItem
+
+```java
+public void addItem(String list, Object value) throws ClorastoreException
+```
+
+Appends `value` to the list field named `list`. Creates the list (and the document, if absent) if it does not already exist.
+
+<ParamField path="list" type="string" required>
+  Name of the list field to append to.
+</ParamField>
+
+<ParamField path="value" type="Object" required>
+  Value to append. Must be a supported type (`String`, `Number`, `Boolean`, or `null`).
+</ParamField>
+
+**Throws** `ClorastoreException` if the network request fails or the updated document exceeds 2 MB.
+
+```java
+userDoc.addItem("tags", "premium");
+userDoc.addItem("tags", "verified");
+```
+
+---
+
+## removeItem
+
+```java
+public void removeItem(String key) throws ClorastoreException
+```
+
+Removes the field named `key` from the document entirely. If the field does not exist, the call is a no-op for the field itself, but still persists the document.
+
+<ParamField path="key" type="string" required>
+  Name of the field to remove.
+</ParamField>
+
+**Throws** `ClorastoreException` if the network request fails.
+
+```java
+userDoc.removeItem("temporaryToken");
+```
+
+---
+
+## delete
+
+```java
+public void delete() throws ClorastoreException
+```
+
+Permanently deletes the document file from GitHub. Clears the local cache after a successful delete.
+
+**Throws** `ClorastoreException` if the document does not exist or the delete request fails.
+
+```java
+userDoc.delete();
+```
+
+---
+
+## Accessors
+
+### getPath
+
+```java
+public String getPath()
+```
+
+<ResponseField name="String" type="string">
+  Relative path of the document including the `.doc` extension. Example: `"users/alice.doc"`.
+</ResponseField>
+
+### getName
+
+```java
+public String getName()
+```
+
+<ResponseField name="String" type="string">
+  Document name without the `.doc` extension. Example: `"alice"`.
+</ResponseField>
+
+### getCollection
+
+```java
+public Collection getCollection()
+```
+
+<ResponseField name="Collection" type="Collection">
+  The parent collection that contains this document.
+</ResponseField>
+
+---
+
+## Example: full CRUD lifecycle
+
+```java
+import clorabase.sdk.java.Clorabase;
+import clorabase.sdk.java.database.Collection;
+import clorabase.sdk.java.database.Document;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class DocumentExample {
+    public static void main(String[] args) throws Exception {
+        Clorabase app = Clorabase.getInstance("rahilkhan", System.getenv("TOKEN"), "my-project");
+        Document user = app.getDatabase().collection("users").document("alice");
+
+        // Create
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "Alice");
+        data.put("age", 30);
+        data.put("active", true);
+        user.setData(data);
+
+        // Read (cached)
+        Map<String, Object> cached = user.getData();
+        System.out.println("Name: " + cached.get("name"));
+
+        // Partial update
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("age", 31);
+        user.update(patch);
+
+        // Append to a list field
+        user.addItem("roles", "editor");
+
+        // Remove a field
+        user.removeItem("active");
+
+        // Force fresh read from GitHub
+        Map<String, Object> latest = user.fetch();
+        System.out.println("Age: " + latest.get("age")); // 31
+
+        // Delete
+        user.delete();
+    }
+}
+```

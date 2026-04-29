@@ -1,0 +1,116 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Clorabase",
+  "projectDescription": "A free, open-source Backend-as-a-Service (BaaS) SDK for Android and Java apps that uses GitHub repositories as a NoSQL database and cloud storage backend.",
+  "theme": "luma",
+  "primaryColor": "#2DA44E",
+  "lightColor": "#39C25E",
+  "darkColor": "#1A7A33",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "setup"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "database/overview",
+              "database/collections-documents",
+              "database/querying",
+              "storage/overview",
+              "storage/files-blobs"
+            ]
+          },
+          {
+            "group": "Android Features",
+            "pages": [
+              "android/in-app-messaging",
+              "android/in-app-updates"
+            ]
+          },
+          {
+            "group": "Console App",
+            "pages": [
+              "console/overview",
+              "console/managing-data"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/limits-constraints",
+              "reference/error-handling",
+              "reference/security",
+              "reference/faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Java SDK",
+            "pages": [
+              "api/java/clorabase",
+              "api/java/collection",
+              "api/java/document",
+              "api/java/query",
+              "api/java/storage"
+            ]
+          },
+          {
+            "group": "Android SDK",
+            "pages": [
+              "api/android/clorabase",
+              "api/android/clorastore",
+              "api/android/storage",
+              "api/android/messaging",
+              "api/android/updates"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "NoSQL database backed by GitHub repositories with AES-128 encryption",
+    "Cloud file storage with support for both regular files (<50MB) and large blob files via GitHub Releases",
+    "In-App Messaging with customizable dialog styles (Simple, Coupon, Promo) for Android",
+    "In-App Updates for apps distributed outside the Play Store",
+    "Zero-cost serverless backend using GitHub infrastructure",
+    "Android SDK with Google Play Services Task<T> async API",
+    "Pure Java SDK for non-Android Java applications",
+    "Console Android app for managing projects, data, and messages"
+  ],
+  "publicApiSurface": [
+    "Clorabase.getInstance(username, token, project)",
+    "Clorabase.getDatabase() -> Collection / ClorastoreCollection",
+    "Clorabase.getStorage() -> ClorabaseStorage",
+    "Clorabase.getAPIQuota() -> Quota",
+    "Collection.collection(name) / Collection.document(name)",
+    "Collection.getDocuments() / Collection.getCollections()",
+    "Collection.query() -> Query",
+    "Document.getData() / Document.fetch()",
+    "Document.setData(Map) / Document.update(Map) / Document.put(key, value)",
+    "Document.addItem(list, value) / Document.removeItem(key) / Document.delete()",
+    "Query.where(Predicate) / Query.whereGreater / Query.whereLess / Query.whereEqual / Query.orderBy",
+    "ClorabaseStorage.directory(name)",
+    "ClorabaseStorage.addFile(bytes, name) / ClorabaseStorage.uploadFile(stream, name, listener)",
+    "ClorabaseStorage.uploadBlob(stream, name, listener)",
+    "ClorabaseStorage.getFile(name) / ClorabaseStorage.getBlobStream(name)",
+    "ClorabaseStorage.listFiles() / ClorabaseStorage.delete(name) / ClorabaseStorage.deleteBlob(name)",
+    "Clorabase.initInAppMessaging(context) [Android]",
+    "Clorabase.initInAppUpdate(context) [Android]",
+    "InAppMessaging.fetch() / InAppMessaging.show(context) [Android]",
+    "ProgressListener.onProgress(bytesRead, total) / onComplete() / onError(e)"
+  ]
+}

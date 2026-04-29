@@ -1,0 +1,81 @@
+---
+title: "Clorabase Storage: file storage overview"
+description: "Clorabase Storage stores files directly in your GitHub repository or as Release assets for large files. Learn about the two storage tiers."
+---
+
+Clorabase Storage gives every project a file system backed by its GitHub repository. Files live under `<project>/storage/` in the repo and are organized into directories you navigate with the SDK.
+
+## How it works
+
+When you call `clorabase.getStorage()`, you get a `ClorabaseStorage` reference pointing at the root of your project's storage tree. From there you can navigate into subdirectories, upload files, and retrieve or delete them.
+
+```java
+ClorabaseStorage storage = clorabase.getStorage();
+ClorabaseStorage images  = storage.directory("images");
+```
+
+Every `directory()` call returns a new `ClorabaseStorage` scoped to that path. Subdirectories are created automatically the first time a file is written into them.
+
+## Two storage tiers
+
+Clorabase Storage has two distinct tiers depending on file size.
+
+| | Regular files | Blob files |
+|---|---|---|
+| **How stored** | Base64-encoded content committed directly to the GitHub repo | Uploaded as GitHub Release assets; a small `.ptr` pointer file is committed to the repo |
+| **Upload method** | `addFile()` / `uploadFile()` | `uploadBlob()` |
+| **Download method** | `getFile()` | `getBlobStream()` / `getBlobDownloadURL()` |
+| **Practical size limit** | ~1 MB for `addFile()`, up to 50 MB for `uploadFile()` | No practical limit imposed by Clorabase |
+| **Best for** | Config files, small assets, text content | Videos, installers, large binaries, datasets |
+
+### Regular files
+
+Regular files are committed to the GitHub repository as base64-encoded content. This makes them instantly accessible through GitHub's API and content endpoints, but GitHub's own limits apply:
+
+- `addFile(byte[], String)` — synchronous, best for small content up to ~1 MB.
+- `uploadFile(InputStream, String, ProgressListener)` — streams the upload with progress callbacks, supports files up to 50 MB. Files larger than 50 MB throw a `StorageException` with reason `FILE_TOO_LARGE`.
+
+<Warning>
+Committing large files directly to a GitHub repository grows the repo size permanently. Use blob storage for anything over a few megabytes.
+</Warning>
+
+### Blob files
+
+Blob files are uploaded to a GitHub Release attached to your project. Clorabase then writes a small JSON `.ptr` pointer file into the repo that records the download URL, file size, timestamp, and asset ID. Retrieval reads the pointer and streams directly from the Release asset URL.
+
+- `uploadBlob(InputStream, String, ProgressListener)` — uploads the asset and creates the `.ptr` file.
+- `getBlobStream(String)` — reads the `.ptr` file and returns an `InputStream` to the asset.
+- `getBlobDownloadURL(String)` — returns the direct `URL` for the asset without streaming.
+- `deleteBlob(String)` — deletes both the Release asset and the `.ptr` pointer file.
+
+<Info>
+Blob storage requires a GitHub Release to already exist for your project. Create one through the Clorabase Console app, or pass `configureStorage=true` when initializing the project programmatically.
+</Info>
+
+## Navigating directories
+
+`directory()` calls can be chained to reach nested paths:
+
+```java
+// root storage
+ClorabaseStorage storage = clorabase.getStorage();
+
+// single level
+ClorabaseStorage images  = storage.directory("images");
+
+// nested
+ClorabaseStorage avatars = storage.directory("images").directory("avatars");
+```
+
+No API call is made until you perform an operation on the returned reference.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Upload, download, and manage files" icon="file-arrow-up" href="/storage/files-blobs">
+    Code examples for every storage operation: uploading regular files and blobs, downloading, listing, and deleting.
+  </Card>
+  <Card title="Console setup" icon="gear" href="/console">
+    Create a GitHub Release for your project to enable blob storage.
+  </Card>
+</Columns>

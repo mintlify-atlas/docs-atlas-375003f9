@@ -1,0 +1,204 @@
+---
+title: "InAppMessaging — Clorabase Android SDK"
+description: "Reference for Clorabase In-App Messaging: fetch messages from GitHub, show dialog overlays, and handle primary button clicks in your Android app."
+---
+
+## Overview
+
+`InAppMessaging` fetches message definitions stored as JSON files in your Clorabase project's `messages/` directory on GitHub and displays them as styled dialogs over your app's UI.
+
+Messages are filtered by expiry and `show_once` flags before display. The queue is sorted newest-first by `timestamp`, so the most recent message always shows first.
+
+The simplest integration is through `Clorabase.initInAppMessaging(context)`, which fetches and shows in one call. Use `InAppMessaging` directly when you need manual control over timing or click handling.
+
+---
+
+## `InAppMessaging` class
+
+### `getInstance`
+
+```java
+public static InAppMessaging getInstance(
+    @NonNull Context context,
+    @NonNull String project,
+    boolean autoShow
+)
+```
+
+Returns the singleton `InAppMessaging` instance. If `autoShow` is `true`, `fetchAndShow(context)` is called immediately after initialization.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | Activity or application context. |
+| `project` | `String` | The Clorabase project identifier (GitHub repository name). |
+| `autoShow` | `boolean` | `true` to fetch and show the newest message right away; `false` for manual control. |
+
+**Returns** — Singleton `InAppMessaging` instance.
+
+---
+
+### `fetch`
+
+```java
+public Task<Queue<Message>> fetch()
+```
+
+Fetches all valid pending messages from the `<project>/messages/` directory. The returned queue is a `PriorityQueue` ordered newest-first by `timestamp`.
+
+Messages are excluded from the result if:
+- `show_once` is `true` and the message has already been shown (tracked in `SharedPreferences`).
+- `expiry` is set and the current time is past that value.
+
+Images referenced by `image` URLs are downloaded and decoded into `Bitmap` objects during this call.
+
+**Returns** — `Task<Queue<Message>>` delivered on the main thread.
+
+```java
+InAppMessaging messaging = clorabase.getMessagingService(this);
+
+messaging.fetch()
+    .addOnSuccessListener(queue -> {
+        Log.d("TAG", queue.size() + " message(s) available");
+    })
+    .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `fetchAndShow`
+
+```java
+public void fetchAndShow(@NonNull Context context)
+```
+
+Convenience method that calls `fetch()` and, if the queue is non-empty, immediately calls `show(context)` to display the newest message.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | The context in which to show the dialog. |
+
+**Returns** — `void`. Errors are silently printed to the stack trace.
+
+```java
+messaging.fetchAndShow(this);
+```
+
+---
+
+### `show`
+
+```java
+public void show(@Nullable Context context)
+```
+
+Dequeues the next message from the already-fetched queue and displays it as a dialog. Call `fetch()` before calling `show()` to populate the queue.
+
+If `context` is a finishing or destroyed `Activity`, this method returns without displaying anything.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | The activity context for rendering the dialog. |
+
+**Dialog styles by message style:**
+
+| `style` value | Dialog type | Cancelable |
+|--------------|-------------|------------|
+| `SIMPLE` | Standard alert dialog | Yes |
+| `COUPON` | Coupon-styled dialog | No |
+| `PROMO` | Promotional dialog | No |
+
+```java
+// Fetch first, then show on demand
+messaging.fetch().addOnSuccessListener(queue -> {
+    if (!queue.isEmpty()) {
+        messaging.show(MainActivity.this);
+    }
+});
+```
+
+---
+
+### `setOnPrimaryClickListener`
+
+```java
+public void setOnPrimaryClickListener(@NonNull OnPrimaryClickListener listener)
+```
+
+Sets a custom handler for the primary ("OK") button on message dialogs. Replaces the default behavior (which dismisses the dialog and, if no listener is set, opens `message.link` in a browser).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `listener` | `OnPrimaryClickListener` | Callback invoked when the primary button is tapped. |
+
+Set this before calling `fetchAndShow` or `show`.
+
+```java
+messaging.setOnPrimaryClickListener((message, dialog) -> {
+    // Custom action — e.g. navigate to a screen
+    startActivity(new Intent(this, PromoActivity.class));
+    dialog.dismiss();
+});
+```
+
+---
+
+## `Message` class
+
+`Message` is the data model for an in-app message. Fields are populated from the JSON file stored in `<project>/messages/`.
+
+| Field | Type | JSON key | Description |
+|-------|------|----------|-------------|
+| `title` | `String` | `"title"` | Dialog title text. |
+| `content` | `String` | `"message"` | Body text shown in the dialog. |
+| `imageUrl` | `String` | `"image"` | URL of an image to display. Downloaded and decoded automatically during `fetch()`. |
+| `link` | `String` | `"link"` | URL opened when the primary button is tapped (default behavior, overridden by `OnPrimaryClickListener`). |
+| `timestamp` | `long` | `"timestamp"` | Unix epoch milliseconds. Used for newest-first ordering. |
+| `expiry` | `long` | `"expiry"` | Unix epoch milliseconds. Message is excluded after this time. `0` means no expiry. |
+| `showOnce` | `boolean` | `"show_once"` | If `true`, the message is shown only once per device install. |
+| `style` | `String` | `"style"` | One of `"SIMPLE"`, `"COUPON"`, or `"PROMO"`. Defaults to `"SIMPLE"`. |
+
+**Example message JSON:**
+
+```json
+{
+  "title": "New Feature Available",
+  "message": "Check out our latest update with improved performance.",
+  "image": "https://example.com/banner.png",
+  "link": "https://example.com/release-notes",
+  "timestamp": 1714000000000,
+  "expiry": 1716592000000,
+  "show_once": true,
+  "style": "PROMO"
+}
+```
+
+---
+
+## `OnPrimaryClickListener` interface
+
+```java
+interface OnPrimaryClickListener {
+    void onClick(Message message, Dialog dialog);
+}
+```
+
+Implement this interface to handle primary button taps on message dialogs.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `message` | `Message` | The message that was displayed. Access `message.link`, `message.title`, etc. |
+| `dialog` | `Dialog` | The active dialog. Call `dialog.dismiss()` to close it. |
+
+**Note:** You are responsible for dismissing the dialog. If `dialog.dismiss()` is not called, the dialog remains visible.
+
+---
+
+## Message styles
+
+| Style | Visual | Cancelable | Use case |
+|-------|--------|------------|----------|
+| `SIMPLE` | Standard alert | Yes (back/outside tap) | General announcements |
+| `COUPON` | Coupon card layout | No | Discount codes, vouchers |
+| `PROMO` | Promotional card layout | No | Feature launches, sales |
+
+Both `COUPON` and `PROMO` dialogs are non-cancelable: users must tap the primary or secondary button to dismiss them. `SIMPLE` dialogs can be dismissed by tapping outside.

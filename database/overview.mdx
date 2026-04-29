@@ -1,0 +1,96 @@
+---
+title: "Clorastore: NoSQL database overview"
+description: "Clorastore stores encrypted JSON documents in GitHub repositories. Learn how the database is structured and what operations are supported."
+---
+
+Clorastore is the NoSQL database component of the Clorabase SDK. It stores data as AES-128 encrypted JSON files (`.doc`) inside your `Clorabase-projects` GitHub repository, under the `<project>/db/` path. There is no separate database server — GitHub is the backend.
+
+## Data model
+
+Clorastore uses a hierarchical model of **collections** and **documents**, similar to Firestore:
+
+- A **collection** is a named container that holds documents and/or sub-collections.
+- A **document** is a single encrypted JSON file (e.g., `user1.doc`) that stores a flat map of key-value pairs.
+
+```
+Clorabase-projects/
+└── <your-project>/
+    └── db/
+        └── users/              ← collection
+            ├── user1.doc       ← document
+            ├── user2.doc       ← document
+            └── admins/         ← sub-collection
+                └── admin1.doc  ← document
+```
+
+Collections can be nested arbitrarily deep. You navigate the hierarchy by chaining `.collection()` calls or using path-based helpers like `collectionAt()` and `documentAt()`.
+
+## Supported data types
+
+Documents store flat key-value maps. Supported value types are:
+
+| Type | Examples |
+|---|---|
+| `String` | `"hello"` |
+| `Number` | `42`, `3.14` |
+| `Boolean` | `true`, `false` |
+| `List` | `[1, "a", true]` — items must be String, Number, Boolean, or null |
+| `null` | field is removed on next write |
+
+<Warning>
+Nested maps (objects inside objects) are **not** supported as field values. Flatten your data structure or use sub-collections instead.
+</Warning>
+
+## Key constraints
+
+| Constraint | Value |
+|---|---|
+| Maximum document size | 2 MB (after encryption) |
+| Cooldown between `put()` calls | 5 seconds |
+| Query execution | Client-side only (all documents fetched, then filtered in-memory) |
+| Collection name characters | Alphanumeric only — no spaces, slashes, dots, or underscores |
+| Document names | Automatically lowercased and trimmed |
+
+## Android vs Java SDK
+
+The **Java SDK** (`Clorabase4J`) exposes synchronous, blocking methods. Call them from a background thread.
+
+The **Android SDK** (`Clorabase4A`) wraps every operation in a `Task<T>` (from Google Play Services), executing work on a background thread and delivering the result on the main UI thread. The API surface is otherwise identical.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    // All methods return Task<T> — attach listeners on the main thread
+    ClorastoreDocument doc = db.collection("users").document("user1");
+
+    doc.getData().addOnSuccessListener(data -> {
+        String name = (String) data.get("name");
+    }).addOnFailureListener(e -> {
+        // handle error
+    });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    // Methods are synchronous — call from a background thread
+    try {
+        Document doc = db.collection("users").document("user1");
+        Map<String, Object> data = doc.getData();
+        String name = (String) data.get("name");
+    } catch (ClorastoreException e) {
+        // handle error
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Collections and documents" icon="database" href="/database/collections-documents">
+    Navigate the hierarchy and perform CRUD operations on collections and documents.
+  </Card>
+  <Card title="Querying" icon="filter" href="/database/querying">
+    Filter, compare, and sort documents using the client-side query engine.
+  </Card>
+</Columns>

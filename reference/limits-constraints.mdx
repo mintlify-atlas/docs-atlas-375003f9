@@ -1,0 +1,48 @@
+---
+title: "Limits and constraints in Clorabase"
+description: "Understand Clorabase's storage limits, rate limits, document size caps, API quota, and platform requirements before building your app."
+---
+
+## Database limits
+
+| Constraint | Value |
+|---|---|
+| Max document size | 2 MB (post-encryption) |
+| Supported value types | `String`, `Number` (`int`, `double`, `long`), `Boolean`, `List` of the above, `null` |
+| Unsupported value types | Nested `Map` objects |
+| Collection names | Alphanumeric characters only |
+| Document names | Alphanumeric characters only; automatically lowercased |
+| `put()` cooldown | 5 seconds between calls on the same document |
+| Query execution | Fully client-side — all documents are fetched and filtered in memory |
+
+<Note>
+`getData()` returns cached data when available. Use `fetch()` to force a fresh read from GitHub and bypass the in-memory cache.
+</Note>
+
+## Storage limits
+
+| Constraint | Value |
+|---|---|
+| `addFile()` | ~1 MB practical limit (single base64-encoded API call) |
+| `uploadFile()` | Up to 50 MB (streamed base64 upload) |
+| Blob files | Limited only by GitHub Release asset limits (~2 GB per asset) |
+| Collection deletion | Not supported via SDK — must be done manually in GitHub |
+
+## GitHub API limits
+
+| Constraint | Value |
+|---|---|
+| API requests | 5,000 requests per hour per token |
+| CDN cache reads | Do not count against the quota |
+| `fetch()` calls | Count against the quota (bypass the CDN cache) |
+
+<Warning>
+When the 5,000 request/hour limit is reached, Clorabase throws `ClorastoreException` with reason `TOO_MANY_REQUESTS`. Design your app to minimize direct `fetch()` calls and prefer `getData()` for cache-friendly reads.
+</Warning>
+
+## Platform requirements
+
+| Platform | Requirement |
+|---|---|
+| Android SDK (Clorabase4A) | `minSdk 29` (Android 10 or higher) |
+| Java SDK (Clorabase4J) | Java 21 or higher |

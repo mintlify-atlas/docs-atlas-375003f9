@@ -1,0 +1,371 @@
+---
+title: "ClorastoreCollection and ClorastoreDocument — Android SDK"
+description: "Reference for ClorastoreCollection, ClorastoreDocument, and ClorastoreQuery in the Android SDK. All async methods return Task and dispatch on the main thread."
+---
+
+## Overview
+
+Clorastore is the document database layer of the Clorabase Android SDK. The hierarchy mirrors a file system:
+
+```
+root (ClorastoreCollection)
+ └── collection("users")          ← ClorastoreCollection
+      └── document("alice")       ← ClorastoreDocument
+           └── collection("orders") ← ClorastoreCollection
+                └── document("001")  ← ClorastoreDocument
+```
+
+Navigation with `collection()` and `document()` is synchronous and instantaneous — no network call is made until you invoke an async method. All async methods return `Task<T>` and deliver their results on the Android main thread.
+
+Obtain the root collection from `Clorabase.getDatabase()`:
+
+```java
+ClorastoreCollection db = clorabase.getDatabase();
+```
+
+---
+
+## ClorastoreCollection
+
+Represents a container of documents and sub-collections.
+
+### `collection`
+
+```java
+public ClorastoreCollection collection(String name)
+```
+
+Navigates into a named sub-collection. Creates the collection lazily on first write.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The name of the sub-collection. |
+
+**Returns** — `ClorastoreCollection` for the named sub-collection.
+
+---
+
+### `document`
+
+```java
+public ClorastoreDocument document(String name)
+```
+
+Returns a reference to a named document within this collection. If the document does not exist it will be created on the first write operation.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The name of the document. |
+
+**Returns** — `ClorastoreDocument` reference.
+
+---
+
+### `getDocuments`
+
+```java
+public Task<List<ClorastoreDocument>> getDocuments()
+```
+
+Fetches all documents that exist in this collection.
+
+**Returns** — `Task<List<ClorastoreDocument>>`. The list is empty when the collection has no documents.
+
+```java
+db.collection("products")
+  .getDocuments()
+  .addOnSuccessListener(docs -> {
+      for (ClorastoreDocument doc : docs) {
+          doc.getData().addOnSuccessListener(data -> Log.d("TAG", data.toString()));
+      }
+  });
+```
+
+---
+
+### `getCollections`
+
+```java
+public Task<List<String>> getCollections()
+```
+
+Lists the names of all sub-collections inside this collection.
+
+**Returns** — `Task<List<String>>` containing sub-collection names.
+
+---
+
+### `delete`
+
+```java
+public Task<Void> delete(String name)
+```
+
+Deletes the named document from this collection.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The name of the document to delete. |
+
+**Returns** — `Task<Void>` that completes when deletion is done.
+
+---
+
+### `query`
+
+```java
+public ClorastoreQuery query()
+```
+
+Returns a `ClorastoreQuery` scoped to this collection. Use it to filter and order documents.
+
+**Returns** — `ClorastoreQuery` instance. See [ClorastoreQuery](#clorastorequery) below.
+
+---
+
+## ClorastoreDocument
+
+Represents a single document containing key-value data. Obtain references via `ClorastoreCollection.document(name)`.
+
+### `getData`
+
+```java
+public Task<Map<String, Object>> getData()
+```
+
+Retrieves the locally cached data for this document, fetching from the server if no cache is present.
+
+**Returns** — `Task<Map<String, Object>>` with the document's fields.
+
+---
+
+### `fetch`
+
+```java
+public Task<Map<String, Object>> fetch()
+```
+
+Forces a network fetch of the latest document data, bypassing any local cache.
+
+**Returns** — `Task<Map<String, Object>>` with the freshly fetched fields.
+
+---
+
+### `setData`
+
+```java
+public Task<Void> setData(Map<String, Object> data)
+```
+
+Overwrites the entire document with the provided map. Any fields not in `data` are removed.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `data` | `Map<String, Object>` | The complete new content of the document. |
+
+**Returns** — `Task<Void>` that completes when the write is done.
+
+---
+
+### `update`
+
+```java
+public Task<Void> update(Map<String, Object> fields)
+```
+
+Merges the provided fields into the document. Existing fields not present in `fields` are left unchanged.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fields` | `Map<String, Object>` | Fields to add or overwrite. |
+
+**Returns** — `Task<Void>` that completes when the update is done.
+
+---
+
+### `put`
+
+```java
+public Task<Void> put(String key, Object value)
+```
+
+Adds or overwrites a single field in the document.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `String` | The field name. |
+| `value` | `Object` | The value to set. |
+
+**Returns** — `Task<Void>` that completes when the write is done.
+
+---
+
+### `addItem`
+
+```java
+public Task<Void> addItem(String list, Object value)
+```
+
+Appends `value` to a list field named `list`. The field must already be a list type; it is created as a new list if it doesn't exist.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `list` | `String` | The name of the list field. |
+| `value` | `Object` | The item to append. |
+
+**Returns** — `Task<Void>` that completes when the item is appended.
+
+---
+
+### `removeItem`
+
+```java
+public Task<Void> removeItem(String key)
+```
+
+Removes the field with the given key from the document.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `String` | The field name to remove. |
+
+**Returns** — `Task<Void>` that completes when the field is removed.
+
+---
+
+### `delete`
+
+```java
+public Task<Void> delete()
+```
+
+Deletes this document from the database.
+
+**Returns** — `Task<Void>` that completes when deletion is done.
+
+---
+
+## ClorastoreQuery
+
+`ClorastoreQuery` provides filtered and sorted reads on a collection. Obtain an instance via `ClorastoreCollection.query()`.
+
+All query methods execute asynchronously and return `Task<List<ClorastoreDocument>>`, with results delivered on the main thread.
+
+### `where`
+
+```java
+public Task<List<ClorastoreDocument>> where(Predicate<Map<String, Object>> condition)
+```
+
+Returns documents for which `condition` evaluates to `true`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `condition` | `Predicate<Map<String, Object>>` | A lambda that receives each document's data map and returns `true` to include it. |
+
+```java
+db.collection("orders")
+  .query()
+  .where(data -> (int) data.get("quantity") > 5)
+  .addOnSuccessListener(docs -> { /* ... */ });
+```
+
+---
+
+### `whereGreater`
+
+```java
+public Task<List<ClorastoreDocument>> whereGreater(String field, Number value)
+```
+
+Returns documents where `field` is numerically greater than `value`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `field` | `String` | The numeric field to compare. |
+| `value` | `Number` | The lower bound (exclusive). |
+
+---
+
+### `whereLess`
+
+```java
+public Task<List<ClorastoreDocument>> whereLess(String field, Number value)
+```
+
+Returns documents where `field` is numerically less than `value`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `field` | `String` | The numeric field to compare. |
+| `value` | `Number` | The upper bound (exclusive). |
+
+---
+
+### `whereEqual`
+
+```java
+public Task<List<ClorastoreDocument>> whereEqual(String field, Object value)
+```
+
+Returns documents where `field` equals `value` (uses `.equals()` comparison).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `field` | `String` | The field to compare. |
+| `value` | `Object` | The expected value. |
+
+---
+
+### `orderBy`
+
+```java
+public Task<List<ClorastoreDocument>> orderBy(String field, int limit)
+```
+
+Returns up to `limit` documents sorted in ascending order by `field`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `field` | `String` | The field to sort by. |
+| `limit` | `int` | Maximum number of documents to return. |
+
+---
+
+## Complete example
+
+The following example reads a user document, updates a field, appends an item to a list, and queries a sub-collection — all chained together:
+
+```java
+ClorastoreCollection db = clorabase.getDatabase();
+
+ClorastoreDocument userDoc = db.collection("users").document("alice");
+
+// 1. Fetch fresh data
+userDoc.fetch()
+    .addOnSuccessListener(data -> {
+        Log.d("TAG", "Name: " + data.get("name"));
+
+        // 2. Update a single field
+        userDoc.put("lastSeen", System.currentTimeMillis())
+            .addOnSuccessListener(unused -> Log.d("TAG", "lastSeen updated"));
+
+        // 3. Append to a list field
+        userDoc.addItem("badges", "early_adopter")
+            .addOnSuccessListener(unused -> Log.d("TAG", "badge added"));
+    })
+    .addOnFailureListener(Throwable::printStackTrace);
+
+// 4. Query orders where amount > 100, limit 10
+db.collection("users").document("alice").collection("orders") // ← sub-collection
+  // navigate back to collection to get a query
+  ;
+
+db.collection("orders")
+    .query()
+    .whereGreater("amount", 100)
+    .addOnSuccessListener(docs -> {
+        Log.d("TAG", docs.size() + " large orders found");
+    })
+    .addOnFailureListener(Throwable::printStackTrace);
+```

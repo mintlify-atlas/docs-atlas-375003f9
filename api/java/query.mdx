@@ -1,0 +1,197 @@
+---
+title: "Query — Clorabase Java SDK"
+description: "Reference for Clorastore's client-side query methods: where, whereGreater, whereLess, whereEqual, and orderBy in the Clorabase Java SDK."
+---
+
+`clorabase.sdk.java.database.Query` provides client-side filtering and ordering of documents within a [`Collection`](/api/java/collection). Obtain a query via [`Collection.query()`](/api/java/collection#query).
+
+<Warning>
+  All query methods fetch every document in the collection before filtering. There is no server-side indexing. For large collections, consider structuring data to minimize document count or paginate manually.
+</Warning>
+
+When a `Query` is constructed it immediately begins loading the collection's document list in a background thread (10-second timeout). All filter methods block until that prefetch completes.
+
+---
+
+## where
+
+```java
+public List<Document> where(Predicate<Map<String, Object>> predicate) throws ClorastoreException
+```
+
+Returns all documents whose data satisfies the given predicate. Each document is fetched individually before the predicate is applied.
+
+<ParamField path="predicate" type="Predicate<Map<String, Object>>" required>
+  A `java.util.function.Predicate` that receives each document's field map and returns `true` to include the document.
+</ParamField>
+
+<ResponseField name="List<Document>" type="List">
+  Documents for which the predicate returned `true`. May be empty.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the document list or any individual document fetch fails.
+
+```java
+List<Document> results = collection.query()
+    .where(data -> "active".equals(data.get("status")) && (int) data.get("age") > 18);
+```
+
+---
+
+## whereGreater
+
+```java
+public List<Document> whereGreater(String field, Number value) throws ClorastoreException
+```
+
+Returns all documents where the numeric field is strictly greater than `value`. Documents missing the field or where the field is not a `Number` are excluded.
+
+<ParamField path="field" type="string" required>
+  Name of the numeric field to compare.
+</ParamField>
+
+<ParamField path="value" type="Number" required>
+  Threshold value. Documents with a field value strictly greater than this are returned.
+</ParamField>
+
+<ResponseField name="List<Document>" type="List">
+  Matching documents. May be empty.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the document list or any fetch fails.
+
+```java
+// Users with score > 50
+List<Document> highScorers = collection.query().whereGreater("score", 50);
+```
+
+---
+
+## whereLess
+
+```java
+public List<Document> whereLess(String field, Number value) throws ClorastoreException
+```
+
+Returns all documents where the numeric field is strictly less than `value`. Documents missing the field or where the field is not a `Number` are excluded.
+
+<ParamField path="field" type="string" required>
+  Name of the numeric field to compare.
+</ParamField>
+
+<ParamField path="value" type="Number" required>
+  Threshold value. Documents with a field value strictly less than this are returned.
+</ParamField>
+
+<ResponseField name="List<Document>" type="List">
+  Matching documents. May be empty.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the document list or any fetch fails.
+
+```java
+// Items with stock < 10
+List<Document> lowStock = collection.query().whereLess("stock", 10);
+```
+
+---
+
+## whereEqual
+
+```java
+public List<Document> whereEqual(String field, Object value) throws ClorastoreException
+```
+
+Returns all documents where the field equals `value` using `Objects.equals`. Works with any supported field type.
+
+<ParamField path="field" type="string" required>
+  Name of the field to compare.
+</ParamField>
+
+<ParamField path="value" type="Object" required>
+  Target value. Uses `Objects.equals` for comparison. Pass `null` to match documents where the field is explicitly set to `null`.
+</ParamField>
+
+<ResponseField name="List<Document>" type="List">
+  Documents where the field equals `value`. May be empty.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the document list or any fetch fails.
+
+```java
+List<Document> admins = collection.query().whereEqual("role", "admin");
+```
+
+---
+
+## orderBy
+
+```java
+public List<Document> orderBy(String field, int limit) throws ClorastoreException
+```
+
+Returns up to `limit` documents sorted in **ascending** order by a numeric field. Documents missing the field or where the field is not a `Number` are excluded from results.
+
+<ParamField path="field" type="string" required>
+  Name of the numeric field to sort by.
+</ParamField>
+
+<ParamField path="limit" type="int" required>
+  Maximum number of documents to return.
+</ParamField>
+
+<ResponseField name="List<Document>" type="List">
+  Up to `limit` documents sorted ascending by `field`. May be fewer than `limit` if not enough qualifying documents exist.
+</ResponseField>
+
+**Throws** `ClorastoreException` if the document list or any fetch fails.
+
+```java
+// Top 5 highest-score users (ascending order by "score")
+List<Document> top5 = collection.query().orderBy("score", 5);
+```
+
+---
+
+## Example: filtering and ordering
+
+```java
+import clorabase.sdk.java.Clorabase;
+import clorabase.sdk.java.database.Collection;
+import clorabase.sdk.java.database.Document;
+import clorabase.sdk.java.database.Query;
+
+import java.util.List;
+import java.util.Map;
+
+public class QueryExample {
+    public static void main(String[] args) throws Exception {
+        Clorabase app = Clorabase.getInstance("rahilkhan", System.getenv("TOKEN"), "my-project");
+        Collection products = app.getDatabase().collection("products");
+
+        // Custom predicate: in-stock items under $20
+        List<Document> affordable = products.query()
+            .where(data -> {
+                Object price = data.get("price");
+                Object inStock = data.get("inStock");
+                return price instanceof Number
+                    && ((Number) price).doubleValue() < 20.0
+                    && Boolean.TRUE.equals(inStock);
+            });
+        System.out.println("Affordable in-stock: " + affordable.size());
+
+        // Numeric range filter
+        List<Document> highRated = products.query().whereGreater("rating", 4);
+
+        // Equality filter
+        List<Document> electronics = products.query().whereEqual("category", "electronics");
+
+        // Sort ascending by price, limit to 10
+        List<Document> cheapest = products.query().orderBy("price", 10);
+        for (Document d : cheapest) {
+            Map<String, Object> data = d.getData();
+            System.out.printf("%s — $%.2f%n", data.get("name"), ((Number) data.get("price")).doubleValue());
+        }
+    }
+}
+```

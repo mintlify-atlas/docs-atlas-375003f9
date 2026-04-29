@@ -1,0 +1,50 @@
+---
+title: "Frequently asked questions about Clorabase"
+description: "Common questions about Clorabase setup, limitations, tokens, encryption, concurrent writes, and choosing the right backend for your app."
+---
+
+This page answers common questions about Clorabase — covering setup, limitations, quota handling, encryption, and when Clorabase is (and isn't) the right fit for your app.
+
+<AccordionGroup>
+  <Accordion title="Is Clorabase really free?">
+    Yes. Clorabase is built entirely on GitHub's free tier and has no paid plans. As long as your usage stays within GitHub's API and storage limits, there is no cost.
+  </Accordion>
+
+  <Accordion title="Can I use Clorabase for production apps?">
+    Clorabase is best suited for small or hobby projects. It is not recommended for apps that require built-in authentication, advanced queries, or support for high concurrency. For production apps with those needs, consider a dedicated backend service.
+  </Accordion>
+
+  <Accordion title="What happens if I exceed the GitHub API quota?">
+    Clorabase will throw a `ClorastoreException` with `Reason.TOO_MANY_REQUESTS`. The GitHub API quota resets every hour. You can check your current quota usage by calling `getAPIQuota()`.
+  </Accordion>
+
+  <Accordion title="Can multiple users write data simultaneously?">
+    No. Clorabase has no built-in conflict resolution. Concurrent writes follow a last-write-wins strategy, meaning data can be silently overwritten. It is not suitable for apps with high-concurrency write requirements.
+  </Accordion>
+
+  <Accordion title="How do I delete a collection?">
+    Collection deletion is not supported through the SDK. To delete a collection, you must remove the corresponding directory manually from your `Clorabase-projects` GitHub repository.
+  </Accordion>
+
+  <Accordion title="Why does getData() return stale data?">
+    `getData()` returns locally cached data. To retrieve the latest state from GitHub, call `fetch()` instead. Note that `fetch()` consumes API quota.
+  </Accordion>
+
+  <Accordion title="Can I store images in the database?">
+    No. Database documents only support primitive value types — nested objects and binary data are not supported. Use `ClorabaseStorage` to store images and other binary files.
+  </Accordion>
+
+  <Accordion title="Is my data safe if my repository is public?">
+    Database documents are AES-128 encrypted, so their contents cannot be read without your GitHub token. However, storage files are not encrypted. If your repository is public, storage files are readable by anyone. Keep your `Clorabase-projects` repository private.
+  </Accordion>
+
+  <Accordion title="Does Clorabase support user authentication?">
+    No. Clorabase does not include an authentication system. You are responsible for implementing authentication in your app independently.
+  </Accordion>
+
+  <Accordion title="What's the difference between Clorabase4A and Clorabase4J?">
+    **Clorabase4A** is the Android SDK. It provides an asynchronous `Task<T>` API, in-app messaging, and app update features designed for Android apps.
+
+    **Clorabase4J** is the pure Java SDK. It uses a synchronous API and has no Android-specific features, making it suitable for Java desktop or server-side applications.
+  </Accordion>
+</AccordionGroup>

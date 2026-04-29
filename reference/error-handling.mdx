@@ -1,0 +1,59 @@
+---
+title: "Error handling in Clorabase"
+description: "Clorabase throws ClorastoreException with a typed Reason enum. Learn how to catch and handle database and storage errors in both SDKs."
+---
+
+Clorabase signals errors through `ClorastoreException`, a checked exception that exposes a `Reason` enum via `getReason()`. Storage operations throw `StorageException`, which extends `ClorastoreException`. Both SDKs use the same exception types — the Android SDK surfaces them through `Task.addOnFailureListener`.
+
+## Reason enum values
+
+| Name | Description |
+|---|---|
+| `INVALID_DATATYPE` | A value type not supported by Clorastore was used. Nested `Map` values are not allowed. |
+| `TOO_MANY_REQUESTS` | The GitHub API quota has been exhausted (5,000 requests/hour). |
+| `DOCUMENT_SIZE_EXCEEDED` | The document exceeds the 2 MB size limit. |
+| `NOT_EXISTS` | The requested document or file does not exist. |
+| `File_ALREADY_EXISTS` | A file already exists at the specified storage path. |
+| `Storage_NOT_CONFIGURED` | Blob storage has not been set up — no GitHub Release has been created. |
+| `FILE_TOO_LARGE` | The file exceeds the `uploadFile` limit of 50 MB. |
+| `BLOB_NOT_CONFIGURED` | Blob operations were attempted without configuring blob storage first. |
+| `UNKNOWN` | An unexpected or unrecognized error occurred. |
+
+## Handling errors in Java SDK
+
+```java
+try {
+    db.collection("users").document("user1").setData(data);
+} catch (ClorastoreException e) {
+    switch (e.getReason()) {
+        case TOO_MANY_REQUESTS:
+            // wait and retry
+            break;
+        case DOCUMENT_SIZE_EXCEEDED:
+            // reduce document size
+            break;
+        default:
+            e.printStackTrace();
+    }
+}
+```
+
+## Handling errors in Android SDK
+
+```java
+db.collection("users").document("user1")
+    .setData(data)
+    .addOnSuccessListener(v -> Log.d("DB", "Saved"))
+    .addOnFailureListener(e -> {
+        if (e instanceof ClorastoreException) {
+            ClorastoreException ce = (ClorastoreException) e;
+            if (ce.getReason() == Reason.TOO_MANY_REQUESTS) {
+                // handle quota exceeded
+            }
+        }
+    });
+```
+
+<Note>
+  Storage errors from `ProgressListener.onError()` are not wrapped in a `Task` — they are delivered directly to the listener callback and must be handled inside that callback.
+</Note>

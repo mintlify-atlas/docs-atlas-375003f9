@@ -1,0 +1,142 @@
+---
+title: "ClorabaseInAppUpdate — Clorabase Android SDK"
+description: "Reference for Clorabase In-App Updates: check version.json on GitHub and prompt users to update apps distributed outside the Play Store."
+---
+
+## Overview
+
+`ClorabaseInAppUpdate` is a lightweight update-check mechanism for Android apps distributed **outside the Google Play Store**. On initialization it fetches a `version.json` file from your Clorabase project on GitHub, compares the version code against the currently installed app, and — if an update is available — shows a dialog prompting the user to download the new APK.
+
+The simplest integration is through `Clorabase.initInAppUpdate(context)`. Alternatively, call `ClorabaseInAppUpdate.init(context, project)` directly.
+
+---
+
+## `ClorabaseInAppUpdate` class
+
+### `init`
+
+```java
+public static void init(@NotNull Context context, @NonNull String project)
+```
+
+Checks the hosted `version.json` for the current package and triggers the update dialog if the remote version code is higher than the installed version code.
+
+The check runs on a background thread. The dialog is shown on the main thread via `Activity.runOnUiThread()`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | Must be an `Activity` — the update dialog is attached to the activity window. |
+| `project` | `String` | The Clorabase project identifier (GitHub repository name). |
+
+**Returns** — `void`.
+
+**Error handling:**
+- `JSONException` and `PackageManager.NameNotFoundException` are caught and surfaced as a `Toast` on the main thread.
+- An `IOException` caused by the file not being found (`FileNotFoundException`) is silently ignored — useful when `version.json` has not yet been created. Any other `IOException` is rethrown as a `RuntimeException`.
+
+```java
+@Override
+protected void onStart() {
+    super.onStart();
+    ClorabaseInAppUpdate.init(this, "my-project");
+}
+```
+
+Or via the `Clorabase` entry point:
+
+```java
+clorabase.initInAppUpdate(this);
+```
+
+---
+
+## `version.json` schema
+
+The file must be placed at the following path in your Clorabase project (GitHub repository):
+
+```
+<project>/updates/<package.name>/version.json
+```
+
+For example, for project `my-app` and package `com.example.myapp`:
+
+```
+my-app/updates/com.example.myapp/version.json
+```
+
+### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `code` | `int` | Yes | The version code of the latest release. Compared against `PackageInfo.versionCode`. |
+| `name` | `String` | No | Human-readable version name (e.g. `"2.1.0"`). Not used programmatically, but useful for documentation purposes. |
+| `downloadUrl` | `String` | Yes | Direct URL to the APK (or app store listing) opened when the user taps the update button. |
+| `mode` | `String` | Yes | Update mode: `"flexible"` or `"urgent"`. Controls dialog behavior. |
+| `date` | `String` | No | Release date string (e.g. `"2025-04-01"`). Informational only. |
+| `downloadCount` | `int` | No | Optional counter for tracking downloads. Not consumed by the SDK. |
+
+### Example
+
+```json
+{
+  "code": 12,
+  "name": "2.1.0",
+  "downloadUrl": "https://github.com/you/my-app/releases/download/v2.1.0/app-release.apk",
+  "mode": "flexible",
+  "date": "2025-04-01",
+  "downloadCount": 0
+}
+```
+
+---
+
+## Update modes
+
+### `flexible`
+
+```
+mode: "flexible"
+```
+
+A dismissible dialog shown when an update is available but not mandatory.
+
+- **Positive button:** "update" — opens `downloadUrl` in a browser or install intent.
+- **Negative button:** "Later" — dismisses the dialog; the user can continue using the app.
+- **Cancelable:** Yes (can be dismissed by tapping outside or pressing back).
+
+Use `flexible` for routine feature updates.
+
+### `urgent`
+
+```
+mode: "urgent"
+```
+
+A non-cancelable dialog shown when the installed version is no longer supported.
+
+- **Positive button:** "update" — opens `downloadUrl`.
+- **Negative button:** "Exit" — calls `Activity.finish()`, closing the app.
+- **Cancelable:** No.
+
+Use `urgent` when the old version has critical bugs or API incompatibilities that make it unsafe to continue running.
+
+---
+
+## Dialog text
+
+| Mode | Title | Message |
+|------|-------|---------|
+| `flexible` | "Update available" | "A new version is available. Update now to get better and uninterrupted experience" |
+| `urgent` | "Update needed" | "This version of the application has expired and is no longer working. Please update to the latest version to continue using the app." |
+
+---
+
+## Version check logic
+
+The SDK reads `versionCode` from `version.json` and compares it to the installed app's `PackageInfo.versionCode`. The dialog is shown only when:
+
+```
+remote code  >  installed versionCode
+```
+
+If the codes are equal or the remote code is lower, no dialog is shown and the app continues normally.

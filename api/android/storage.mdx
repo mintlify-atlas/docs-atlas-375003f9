@@ -1,0 +1,277 @@
+---
+title: "ClorabaseStorage — Clorabase Android SDK"
+description: "Reference for ClorabaseStorage in the Clorabase Android SDK. Upload, download, list, and delete files and blobs via Task results or ProgressListener callbacks."
+---
+
+## Overview
+
+`ClorabaseStorage` represents a directory in the Clorabase storage system (backed by GitHub release assets and repository files). Directories are analogous to folders — they organize files and can be nested.
+
+Obtain the root storage node from `Clorabase.getStorage()`:
+
+```java
+ClorabaseStorage storage = clorabase.getStorage();
+```
+
+**Two file types are supported:**
+
+| Type | Max size | Upload method | Retrieval method |
+|------|----------|---------------|------------------|
+| File | 1 MB | `addFile(byte[], String)` | `getFile(String)` → `Task<byte[]>` |
+| Blob | 50 MB | `uploadBlob(InputStream, String, ProgressListener)` | `getBlobStream(String)` → `Task<InputStream>` |
+| File (stream) | 50 MB | `uploadFile(InputStream, String, ProgressListener)` | `getFile(String)` → `Task<byte[]>` |
+
+Methods that perform heavy I/O (`uploadFile`, `uploadBlob`) use a `void` return type and communicate results through a `ProgressListener` callback. Lighter operations return `Task<T>` for standard listener chaining.
+
+All callbacks are delivered on the Android main thread.
+
+---
+
+## `ProgressListener` interface
+
+```java
+public interface ProgressListener {
+    void onProgress(long bytesRead, long totalBytes);
+    void onComplete();
+    void onError(Exception e);
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `onProgress(long bytesRead, long totalBytes)` | Called periodically with upload progress. |
+| `onComplete()` | Called when the upload finishes successfully. No result string is passed (Android-specific behavior — unlike the Java SDK). |
+| `onError(Exception e)` | Called if the upload fails. |
+
+---
+
+## Methods
+
+### `directory`
+
+```java
+public ClorabaseStorage directory(String name)
+```
+
+Navigates into a named sub-directory, creating it lazily on the first write.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The sub-directory name (e.g. `"images"`, `"documents"`). |
+
+**Returns** — `ClorabaseStorage` representing the sub-directory. This call is synchronous and makes no network request.
+
+```java
+ClorabaseStorage avatars = storage.directory("users").directory("avatars");
+```
+
+---
+
+### `addFile`
+
+```java
+public Task<Void> addFile(byte[] contents, String fileName)
+```
+
+Uploads a small file (max 1 MB) from a byte array. Suitable for thumbnails, JSON blobs, or small assets.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `contents` | `byte[]` | The raw file contents. |
+| `fileName` | `String` | The name to store the file under. |
+
+**Returns** — `Task<Void>` that completes when the file is written.
+
+```java
+byte[] json = "{\"key\":\"value\"}".getBytes(StandardCharsets.UTF_8);
+storage.directory("config")
+       .addFile(json, "settings.json")
+       .addOnSuccessListener(v -> Log.d("TAG", "uploaded"))
+       .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `uploadFile`
+
+```java
+public void uploadFile(
+    @NonNull InputStream file,
+    @NonNull String name,
+    @NonNull ProgressListener listener
+)
+```
+
+Uploads a file up to 50 MB from an `InputStream`. Progress and completion are reported through `listener`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `file` | `InputStream` | Stream of the file data. |
+| `name` | `String` | Destination file name. |
+| `listener` | `ProgressListener` | Callback for progress, completion, and errors. |
+
+**Returns** — `void`. Use `listener.onComplete()` for the success signal.
+
+```java
+InputStream stream = getContentResolver().openInputStream(selectedUri);
+storage.directory("videos").uploadFile(stream, "intro.mp4", new ProgressListener() {
+    @Override
+    public void onProgress(long bytesRead, long totalBytes) {
+        int percent = (int) (bytesRead * 100 / totalBytes);
+        progressBar.setProgress(percent);
+    }
+    @Override
+    public void onComplete() {
+        Toast.makeText(ctx, "Upload complete", Toast.LENGTH_SHORT).show();
+    }
+    @Override
+    public void onError(Exception e) {
+        e.printStackTrace();
+    }
+});
+```
+
+---
+
+### `uploadBlob`
+
+```java
+public void uploadBlob(
+    @NonNull InputStream io,
+    @NonNull String fileName,
+    @NonNull ProgressListener listener
+)
+```
+
+Uploads large binary data as a GitHub release asset (blob). Suitable for files up to 50 MB that should not be stored directly in the repository.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `io` | `InputStream` | Stream of the blob data. |
+| `fileName` | `String` | Name for the stored blob. |
+| `listener` | `ProgressListener` | Callback for progress, completion, and errors. |
+
+**Returns** — `void`. Use `listener.onComplete()` for the success signal.
+
+**Note:** `onComplete()` receives **no** `String` parameter on Android. If you are migrating from the Java SDK (where `onComplete(String result)` passes a download URL), remove that parameter from your Android implementation.
+
+---
+
+### `getFile`
+
+```java
+public Task<byte[]> getFile(String name)
+```
+
+Downloads the named file and returns its contents as a byte array.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The file name to retrieve. |
+
+**Returns** — `Task<byte[]>` containing the file's raw bytes.
+
+```java
+storage.directory("config")
+       .getFile("settings.json")
+       .addOnSuccessListener(bytes -> {
+           String json = new String(bytes, StandardCharsets.UTF_8);
+           Log.d("TAG", json);
+       })
+       .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `getBlobStream`
+
+```java
+public Task<InputStream> getBlobStream(String name)
+```
+
+Returns a streaming `InputStream` for the named blob. Use this for large files where loading everything into memory at once is impractical.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The blob name to retrieve. |
+
+**Returns** — `Task<InputStream>`. Close the stream when done.
+
+```java
+storage.directory("videos")
+       .getBlobStream("intro.mp4")
+       .addOnSuccessListener(inputStream -> {
+           // pipe to ExoPlayer, MediaPlayer, etc.
+       })
+       .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `delete`
+
+```java
+public Task<Void> delete(String name)
+```
+
+Deletes a file (uploaded via `addFile` or `uploadFile`) from this directory.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The file name to delete. |
+
+**Returns** — `Task<Void>` that completes when the file is deleted.
+
+---
+
+### `deleteBlob`
+
+```java
+public Task<Void> deleteBlob(String name)
+```
+
+Deletes a blob (uploaded via `uploadBlob`) from this directory.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `String` | The blob name to delete. |
+
+**Returns** — `Task<Void>` that completes when the blob is deleted.
+
+---
+
+### `listFiles`
+
+```java
+public Task<List<String>> listFiles()
+```
+
+Lists the names of all files in this directory.
+
+**Returns** — `Task<List<String>>` with file names. Does not include sub-directories or blobs.
+
+```java
+storage.directory("images")
+       .listFiles()
+       .addOnSuccessListener(names -> {
+           for (String name : names) {
+               Log.d("TAG", name);
+           }
+       });
+```
+
+---
+
+## Android vs Java SDK — `ProgressListener` difference
+
+The Android `ProgressListener.onComplete()` has **no parameters**:
+
+```java
+// Android SDK (this SDK)
+void onComplete();
+
+// Java SDK — different signature, not used here
+void onComplete(String downloadUrl);
+```
+
+Do not pass a download URL in `onComplete` on Android. If you need the download URL after an upload, retrieve it separately using `getFile` or `getBlobStream`.

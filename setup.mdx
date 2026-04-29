@@ -1,0 +1,109 @@
+---
+title: "Authenticate with Clorabase"
+description: "Generate a GitHub Personal Access Token with repo scope, understand the Clorabase-projects repository structure, and securely store your token."
+---
+
+Clorabase uses a GitHub Personal Access Token (PAT) for both authentication and data access. The token is passed directly to `Clorabase.getInstance()` and is used to read and write files in the `Clorabase-projects` repository under your GitHub account.
+
+## Generate a GitHub token
+
+<Steps>
+  <Step title="Open GitHub token settings">
+    Go to **GitHub** → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**.
+  </Step>
+  <Step title="Create a new token">
+    Click **Generate new token (classic)**.
+
+    Give your token a descriptive name, such as `clorabase-my-app`.
+  </Step>
+  <Step title="Select the required scopes">
+    Enable these scopes:
+
+    - **`repo`** — Full control of private repositories (required for database and storage)
+    - **`workflow`** — Required if your project uses GitHub Actions
+
+    If you plan to use blob storage (large files via GitHub Releases), also enable:
+    - **`write:packages`** is not needed — blob storage uses repo releases, already covered by `repo` scope.
+  </Step>
+  <Step title="Generate and copy the token">
+    Click **Generate token**. Copy the token immediately — GitHub only shows it once.
+
+    Store it somewhere safe, such as a password manager.
+  </Step>
+</Steps>
+
+<Warning>
+Never commit your GitHub token to a public repository. GitHub automatically scans public repos and revokes any tokens it finds. For Android apps, store the token in a local `secrets.properties` file and exclude it from version control via `.gitignore`.
+</Warning>
+
+## How the repository is structured
+
+When you call `Clorabase.getInstance()` for the first time with a new project name, Clorabase checks for a `Clorabase-projects` repository in your GitHub account. If it doesn't exist, the Console app creates it automatically.
+
+Inside `Clorabase-projects`, each project gets its own directory:
+
+```
+Clorabase-projects/
+└── my-project/
+    ├── config.json          — Project metadata
+    ├── db/
+    │   └── users/
+    │       └── user1.doc    — Encrypted JSON document
+    ├── storage/
+    │   └── images/
+    │       └── avatar.png   — Binary file
+    └── messages/
+        └── msg_1234.json    — In-app message payload
+```
+
+## Using the token in your app
+
+Pass your GitHub username, token, and project name to `getInstance()`:
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    Clorabase clorabase = Clorabase.getInstance(
+        "your-github-username",  // GitHub username
+        "ghp_your_token_here",   // Personal Access Token
+        "my-project"             // Project name (folder in Clorabase-projects)
+    );
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    Clorabase clorabase = Clorabase.getInstance(
+        "your-github-username",
+        "ghp_your_token_here",
+        "my-project"
+    );
+    ```
+  </Tab>
+</Tabs>
+
+The `getInstance()` call validates your credentials by reading `my-project/config.json` from GitHub. It throws an exception if the project doesn't exist or if the token is invalid.
+
+## Check API quota
+
+GitHub limits REST API calls to 5,000 requests per hour per token. You can check your remaining quota at any time:
+
+```java
+Quota quota = clorabase.getAPIQuota();
+System.out.println("Remaining calls: " + quota.remaining);
+System.out.println("Resets at: " + quota.resetTime);
+```
+
+<Info>
+Database reads use GitHub's raw content CDN by default, which does not count against your API quota. Only writes and explicit `fetch()` calls (which bypass the CDN cache) consume API quota.
+</Info>
+
+## Token security recommendations
+
+- Store the token in `local.properties` (Android) or a `.env` file, excluded from version control
+- Use a dedicated token per app — don't reuse a token across multiple projects
+- Set a token expiration date and rotate regularly
+- If compromised, revoke the token immediately in GitHub settings and generate a new one
+
+<Tip>
+The GitHub token is also used as the encryption key for your database. This means even if someone gets read access to your `Clorabase-projects` repo, they cannot read your data without the token.
+</Tip>

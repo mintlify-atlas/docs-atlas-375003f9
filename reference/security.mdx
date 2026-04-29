@@ -1,0 +1,41 @@
+---
+title: "Security and encryption in Clorabase"
+description: "All Clorabase database documents are AES-128 encrypted before writing to GitHub. Understand the encryption model, key derivation, and token security practices."
+---
+
+Clorabase encrypts every database document with AES-128 before pushing it to your GitHub repository. Even if someone gains read access to your `Clorabase-projects` repo, they cannot read your database content without your GitHub token.
+
+## Encryption details
+
+| Property | Value |
+|---|---|
+| Algorithm | AES-128 |
+| Key derivation | PBKDF2WithHmacSHA256 |
+| Password | Your GitHub Personal Access Token |
+| Key length | 128 bits |
+| Iterations | 786 |
+
+**What is encrypted:** All `.doc` database files are encrypted before being written to GitHub.
+
+**What is NOT encrypted:** Storage files (images, binaries, blobs), `config.json`, messages, and `version.json` are stored in plaintext.
+
+Your GitHub token serves a dual purpose — it is both your authentication credential and the password used to derive the encryption key. This means losing your token results in permanent loss of access to your database data. There is no recovery mechanism.
+
+## Repository security
+
+<Warning>
+  Always keep your `Clorabase-projects` repository **private**. Storage files are not encrypted and would be publicly readable if the repository is set to public.
+</Warning>
+
+## Token security practices
+
+- Store your token in `local.properties` (Android) or a `.env` file that is excluded from version control.
+- Use a dedicated token per project — do not reuse the same token across multiple apps.
+- Set an expiration date on your token and rotate it periodically.
+- Revoke the token immediately in GitHub Settings if you suspect it has been compromised.
+
+## Client-side key storage caveat
+
+<Warning>
+  Since the GitHub token must be present in your app to function, a determined attacker with APK access could extract it. Clorabase is not suitable for apps handling sensitive personal data, financial information, or regulated content.
+</Warning>

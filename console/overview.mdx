@@ -1,0 +1,58 @@
+---
+title: "Clorabase Console: manage your backend"
+description: "The Clorabase Console is an Android app for creating and managing Clorabase projects, browsing data, uploading files, and pushing messages."
+---
+
+## What is the Clorabase Console?
+
+The Clorabase Console is a standalone Android app that lets developers manage every aspect of their Clorabase backend directly from a mobile device — no need to touch GitHub manually or write scripts to seed data, configure storage, or send messages.
+
+It serves as the primary control panel for your Clorabase projects, providing visual interfaces for all SDK features: database, storage, in-app messaging, in-app updates, and API quota monitoring.
+
+## Getting the Console
+
+The Console is distributed as part of the Clorabase project on GitHub. Clone or download the repository and build the `Console` module, or install the pre-built APK included in the project releases.
+
+```
+https://github.com/Clorabase/Clorabase
+```
+
+## Logging in
+
+The Console authenticates via a **GitHub Personal Access Token (PAT)**. No separate Clorabase account is required.
+
+1. Open the Console app. You will be presented with a login screen.
+2. Enter your GitHub PAT in the **Github Token** field.
+3. Tap **Login**.
+
+On first login, the Console calls the GitHub API to:
+- Verify your token.
+- Create the `Clorabase-projects` repository in your GitHub account if it does not already exist. This repo is the persistent store for all project data.
+
+Your token and GitHub username are saved to the app's `SharedPreferences` so that subsequent launches skip the login screen automatically.
+
+## Home screen
+
+After login, the home screen presents a scrollable list of **feature cards**. Each card navigates to the corresponding module:
+
+| Card | Module |
+|---|---|
+| **Database** | Browse and edit NoSQL collections and documents |
+| **Storage** | Upload, download, and delete files |
+| **In-App Messaging** | Compose and send in-app messages |
+| **In-App Updates** | Manage version metadata and update prompts |
+
+A **Quota** entry is available from the navigation drawer to monitor your remaining GitHub API calls.
+
+## Project management
+
+The Console supports multiple Clorabase projects under the same GitHub account.
+
+- The **active project** is shown in a dropdown in the top app bar. Tap it to switch to a different project.
+- Tap the **+** icon next to the dropdown to create a new project. Project names must be alphanumeric and may include underscores.
+- When creating a project you can optionally enable **blob storage** setup at the same time, which creates the required GitHub Release for large-file storage.
+- If your account has no projects yet, the Console opens the create-project dialog automatically on first login.
+
+## Technology
+
+The Console is built with **Jetpack Compose** and **Material 3**, targeting modern Android versions. Navigation between feature screens is handled by the Jetpack Navigation 3 `NavDisplay` API with a back-stack managed in the `MainViewModel`.

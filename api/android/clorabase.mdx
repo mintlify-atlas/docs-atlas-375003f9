@@ -1,0 +1,179 @@
+---
+title: "Clorabase Android — entry point class"
+description: "Reference for the Android Clorabase entry point: getInstance, getDatabase, getStorage, initInAppMessaging, getMessagingService, and initInAppUpdate."
+---
+
+## Overview
+
+`Clorabase` is the singleton entry point for the Android SDK. Obtain it once — typically in `Application.onCreate()` — and reuse the same instance throughout your app. Calling `getInstance` a second time returns the already-initialized object.
+
+All database and storage operations return `Task<T>` from Google Play Services. Attach result handlers with `.addOnSuccessListener` and `.addOnFailureListener`.
+
+```java
+Clorabase clorabase = Clorabase.getInstance("your_username", "your_token", "your_project");
+```
+
+---
+
+## Methods
+
+### `getInstance`
+
+```java
+public static Clorabase getInstance(
+    @NotNull String username,
+    @NotNull String token,
+    @NotNull String project
+) throws Exception
+```
+
+Initializes and returns the singleton `Clorabase` instance.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `username` | `String` | Your GitHub username. |
+| `token` | `String` | A GitHub personal access token with the required permissions. |
+| `project` | `String` | The name of the Clorabase project (GitHub repository name). |
+
+**Returns** — `Clorabase` singleton instance.
+
+**Throws** — `Exception` if the underlying Java SDK initialization fails; `IllegalArgumentException` if any parameter is blank.
+
+**Note:** All three parameters must be non-blank. Passing an empty string for any of them throws `IllegalArgumentException` immediately.
+
+---
+
+### `getDatabase`
+
+```java
+public ClorastoreCollection getDatabase()
+```
+
+Returns the root `ClorastoreCollection`, which is the entry point for all Clorastore (database) operations.
+
+**Returns** — `ClorastoreCollection` representing the root of the database hierarchy.
+
+```java
+ClorastoreCollection db = clorabase.getDatabase();
+
+db.collection("users")
+  .document("alice")
+  .getData()
+  .addOnSuccessListener(data -> Log.d("TAG", data.toString()))
+  .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `getStorage`
+
+```java
+public ClorabaseStorage getStorage() throws IllegalStateException
+```
+
+Returns the root `ClorabaseStorage` node. Use it to navigate into directories and perform file operations.
+
+**Returns** — `ClorabaseStorage` representing the root of the storage bucket.
+
+**Throws** — `IllegalStateException` if storage is unavailable.
+
+```java
+ClorabaseStorage storage = clorabase.getStorage();
+
+storage.directory("avatars")
+       .getFile("alice.png")
+       .addOnSuccessListener(bytes -> { /* use bytes */ })
+       .addOnFailureListener(Throwable::printStackTrace);
+```
+
+---
+
+### `initInAppMessaging`
+
+```java
+public void initInAppMessaging(Context context)
+```
+
+Initializes the In-App Messaging service **and immediately fetches and displays** the newest non-expired message. Equivalent to calling `InAppMessaging.getInstance(context, project, true)`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | The activity or application context. |
+
+Use this method when you want fire-and-forget message display with no further control. Call it from an `Activity.onResume()` or similar lifecycle hook.
+
+```java
+@Override
+protected void onResume() {
+    super.onResume();
+    clorabase.initInAppMessaging(this);
+}
+```
+
+---
+
+### `getMessagingService`
+
+```java
+public InAppMessaging getMessagingService(Context context)
+```
+
+Returns the `InAppMessaging` singleton **without** auto-displaying any message. Use this when you need manual control over when messages are shown.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | The activity or application context. |
+
+**Returns** — `InAppMessaging` singleton. See the [InAppMessaging reference](/api/android/messaging) for available methods.
+
+```java
+InAppMessaging messaging = clorabase.getMessagingService(this);
+messaging.setOnPrimaryClickListener((message, dialog) -> {
+    // handle primary button click
+    dialog.dismiss();
+});
+messaging.fetchAndShow(this);
+```
+
+---
+
+### `initInAppUpdate`
+
+```java
+public void initInAppUpdate(Context context)
+```
+
+Checks the `version.json` file hosted in your project repository and prompts users to update if a newer version code is found. Intended for apps distributed outside the Google Play Store.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `context` | `Context` | Must be an `Activity` context — the update dialog is shown on the UI thread via `Activity.runOnUiThread()`. |
+
+The update mode (`flexible` or `urgent`) controls whether the dialog is dismissible. See the [ClorabaseInAppUpdate reference](/api/android/updates) for full details.
+
+```java
+@Override
+protected void onStart() {
+    super.onStart();
+    clorabase.initInAppUpdate(this);
+}
+```
+
+---
+
+## Task result handling
+
+Every asynchronous method in the SDK returns `com.google.android.gms.tasks.Task<T>`. The standard pattern is:
+
+```java
+someTask
+    .addOnSuccessListener(result -> {
+        // result is delivered on the main thread
+    })
+    .addOnFailureListener(e -> {
+        // e is a ClorastoreException or IOException
+        e.printStackTrace();
+    });
+```
+
+Callbacks are always invoked on the Android main thread; you can safely update UI directly inside them.

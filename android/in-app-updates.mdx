@@ -1,0 +1,154 @@
+---
+title: "In-app updates for Android with Clorabase"
+description: "Prompt Android users to update apps distributed outside the Play Store. Push version.json to GitHub to trigger flexible or urgent update dialogs in your app."
+---
+
+## Overview
+
+Clorabase In-App Updates is designed for apps distributed **outside the Play Store**. The SDK reads a `version.json` file from your GitHub repository and compares the `code` value against the app's current `versionCode`. If a newer version exists, a dialog is shown prompting the user to download the update.
+
+No Play Store integration is required.
+
+---
+
+## Repository structure
+
+Place your version metadata at:
+
+```
+<project>/updates/<package.name>/version.json
+```
+
+For example, if your package name is `com.example.myapp` and your project is `my-project`:
+
+```
+my-project/updates/com.example.myapp/version.json
+```
+
+---
+
+## `version.json` schema
+
+```json
+{
+  "code": 2,
+  "name": "1.2.0",
+  "downloadUrl": "https://example.com/app.apk",
+  "mode": "flexible",
+  "date": "2025-01-01",
+  "downloadCount": 0
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | `int` | The new version code. Compared against the app's `versionCode`. The update dialog is shown only when this value is **greater than** the installed version code. |
+| `name` | `string` | Human-readable version name (e.g. `"1.2.0"`). Not used in comparison logic; informational only. |
+| `downloadUrl` | `string` | Direct URL to the APK file. Opened in a browser when the user taps **Update**. |
+| `mode` | `string` | Controls dialog behavior. Either `"flexible"` or `"urgent"`. See below. |
+| `date` | `string` | Release date in `YYYY-MM-DD` format. Informational only. |
+| `downloadCount` | `int` | Can be used to track downloads externally. Not read by the SDK. |
+
+---
+
+## Update modes
+
+### `"flexible"`
+
+Shows an **Update available** dialog. The user can choose to update now or dismiss it and continue using the app.
+
+- Title: **Update available**
+- Message: *A new version is available. Update now to get better and uninterrupted experience.*
+- Buttons: **Update** (opens `downloadUrl`) | **Later** (dismisses dialog)
+- Cancelable: yes
+
+### `"urgent"`
+
+Shows an **Update needed** dialog. The user cannot dismiss it and must either update or exit the app. Use this when an older version is no longer functional.
+
+- Title: **Update needed**
+- Message: *This version of the application has expired and is no longer working. Please update to the latest version to continue using the app.*
+- Buttons: **Update** (opens `downloadUrl`) | **Exit** (closes the activity)
+- Cancelable: no
+
+---
+
+## Usage
+
+### Via `ClorabaseInAppUpdate` (standalone)
+
+Call `ClorabaseInAppUpdate.init` with an `Activity` context and your project name. The check runs on a background thread and shows the dialog on the main thread only if an update is available.
+
+```java
+ClorabaseInAppUpdate.init(context, "my-project");
+```
+
+### Via the `Clorabase` instance
+
+If you already have a `Clorabase` instance, use the convenience wrapper:
+
+```java
+Clorabase clorabase = Clorabase.getInstance(username, token, project);
+clorabase.initInAppUpdate(context);
+```
+
+Both approaches are equivalent.
+
+---
+
+## How the version comparison works
+
+1. The SDK fetches `<project>/updates/<packageName>/version.json` from GitHub.
+2. It reads the `code` field as an integer.
+3. It calls `context.getPackageManager().getPackageInfo(packageName, 0).versionCode` to get the installed version.
+4. If `code > versionCode`, the update dialog is shown. Otherwise, nothing happens.
+5. If `version.json` does not exist (`FileNotFoundException`), the check is silently skipped — no dialog, no error.
+
+---
+
+## End-to-end example
+
+**`version.json`** in your GitHub repo:
+
+```json
+{
+  "code": 3,
+  "name": "2.0.0",
+  "downloadUrl": "https://example.com/releases/myapp-2.0.0.apk",
+  "mode": "urgent",
+  "date": "2026-04-01",
+  "downloadCount": 0
+}
+```
+
+**`MainActivity.java`**:
+
+```java
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Initialize Clorabase once (e.g. in Application class or here)
+        try {
+            Clorabase clorabase = Clorabase.getInstance(username, token, "my-project");
+            clorabase.initInAppUpdate(this); // checks version.json and prompts if outdated
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+**What the user sees:**
+
+- If the installed `versionCode` is less than `3`, the **Update needed** dialog appears immediately (because `mode` is `"urgent"`). The user must tap **Update** to download the APK or **Exit** to close the app.
+- If the installed `versionCode` is `3` or higher, no dialog is shown and the app continues normally.
+
+---
+
+## Managing version metadata
+
+Use the **Clorabase Console** app to update `version.json` in your repository. The Console provides a GUI for bumping the version code, changing the mode, and setting the download URL without editing files manually.

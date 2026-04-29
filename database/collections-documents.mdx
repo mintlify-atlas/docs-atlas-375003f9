@@ -1,0 +1,384 @@
+---
+title: "Collections and documents in Clorastore"
+description: "Navigate collections, reference documents, and perform CRUD operations including setData, update, put, addItem, and delete in the Clorabase NoSQL database."
+---
+
+## Navigation
+
+Use the methods below to obtain references to collections and documents. Obtaining a reference does not perform any network request — the request happens when you call a read or write method on the reference.
+
+### Navigate to a collection
+
+```java
+// Direct child collection
+Collection users = db.collection("users");
+
+// Nested sub-collection
+Collection admins = db.collection("users").collection("admins");
+```
+
+<Warning>
+Collection names must be **alphanumeric only**. Spaces, slashes, dots, and underscores are not allowed and will throw an `IllegalArgumentException`.
+</Warning>
+
+### Navigate by path
+
+Use `collectionAt()` and `documentAt()` when you already have the full path as a string.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    // Navigate to a nested collection by path
+    ClorastoreCollection admins = db.collectionAt("users/admins");
+
+    // Navigate to a specific document by full path (must end in .doc)
+    ClorastoreDocument admin = db.documentAt("users/admins/admin1.doc");
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    // Navigate to a nested collection by path
+    Collection admins = db.collectionAt("users/admins");
+
+    // Navigate to a specific document by full path (must end in .doc)
+    Document admin = db.documentAt("users/admins/admin1.doc");
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+The path passed to `documentAt()` must end with `.doc`. Paths passed to `collectionAt()` must not include a `.doc` suffix.
+</Note>
+
+### Navigate to a document
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    ClorastoreDocument userDoc = db.collection("users").document("user1");
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    Document userDoc = db.collection("users").document("user1");
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Document names are automatically **lowercased and trimmed**. `"User1"` and `"user1"` resolve to the same document.
+</Note>
+
+---
+
+## Reading documents
+
+### getData()
+
+Returns cached data if available, otherwise fetches from GitHub.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("user1").getData()
+        .addOnSuccessListener(data -> {
+            String name = (String) data.get("name");
+            int score = ((Number) data.get("score")).intValue();
+        })
+        .addOnFailureListener(e -> Log.e("Clorastore", "Read failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        Map<String, Object> data = db.collection("users").document("user1").getData();
+        String name = (String) data.get("name");
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### fetch()
+
+Always retrieves the latest version from GitHub, bypassing any in-memory cache. Use this when you need to ensure you are reading the most recent data.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("user1").fetch()
+        .addOnSuccessListener(data -> {
+            // freshest data from GitHub
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        Map<String, Object> data = db.collection("users").document("user1").fetch();
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Writing documents
+
+### setData()
+
+Creates or completely overwrites a document with the provided map.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    Map<String, Object> userData = new HashMap<>();
+    userData.put("name", "Alice");
+    userData.put("score", 42);
+    userData.put("active", true);
+
+    db.collection("users").document("alice").setData(userData)
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Document written"))
+        .addOnFailureListener(e -> Log.e("Clorastore", "Write failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    Map<String, Object> userData = new HashMap<>();
+    userData.put("name", "Alice");
+    userData.put("score", 42);
+    userData.put("active", true);
+
+    try {
+        db.collection("users").document("alice").setData(userData);
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+`setData()` **overwrites** the entire document. Any fields not present in the new map are lost. Use `update()` to preserve existing fields.
+</Warning>
+
+### update()
+
+Merges the provided fields into the existing document. Fields in the map are added or replaced; all other existing fields remain unchanged.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    Map<String, Object> changes = new HashMap<>();
+    changes.put("score", 99);
+    changes.put("level", 5);
+
+    db.collection("users").document("alice").update(changes)
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Updated"));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    Map<String, Object> changes = new HashMap<>();
+    changes.put("score", 99);
+    changes.put("level", 5);
+
+    try {
+        db.collection("users").document("alice").update(changes);
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### put()
+
+Writes or updates a single field. If the document does not exist, it is created. Setting `value` to `null` removes the field.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("alice").put("score", 100)
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Field updated"))
+        .addOnFailureListener(e -> Log.e("Clorastore", "put() failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        db.collection("users").document("alice").put("score", 100);
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+`put()` enforces a **5-second cooldown** between successive calls on the same document. Calling it again within 5 seconds throws a `ClorastoreException` with reason `TOO_MANY_REQUESTS`. Use `update()` when writing multiple fields at once to avoid this limit.
+
+Field names for `put()` may only contain letters, numbers, and underscores (`_`).
+</Warning>
+
+### addItem()
+
+Appends a value to a list field. If the field does not exist, a new list is created containing the single value.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("alice").addItem("tags", "premium")
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Item added"));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        db.collection("users").document("alice").addItem("tags", "premium");
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### removeItem()
+
+Deletes a field from the document by key.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("alice").removeItem("temporaryToken")
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Field removed"));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        db.collection("users").document("alice").removeItem("temporaryToken");
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Deleting documents
+
+### Document.delete()
+
+Removes the `.doc` file from GitHub. Throws an exception if the document does not exist.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").document("alice").delete()
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Document deleted"))
+        .addOnFailureListener(e -> Log.e("Clorastore", "Delete failed", e));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        db.collection("users").document("alice").delete();
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Collection.delete()
+
+Deletes a named document from within a collection reference.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").delete("alice")
+        .addOnSuccessListener(unused -> Log.d("Clorastore", "Deleted"));
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        db.collection("users").delete("alice");
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+You cannot delete a collection through the SDK. To remove a collection, delete it manually from the GitHub repository.
+</Note>
+
+---
+
+## Listing collection contents
+
+### getDocuments()
+
+Returns references to all documents in a collection.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").getDocuments()
+        .addOnSuccessListener(docs -> {
+            for (ClorastoreDocument doc : docs) {
+                Log.d("Clorastore", doc.coreDocument.name);
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<Document> docs = db.collection("users").getDocuments();
+        for (Document doc : docs) {
+            System.out.println(doc.name);
+        }
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### getCollections()
+
+Returns the names of all sub-collections inside a collection.
+
+<Tabs>
+  <Tab title="Android">
+    ```java
+    db.collection("users").getCollections()
+        .addOnSuccessListener(names -> {
+            for (String name : names) {
+                Log.d("Clorastore", "Sub-collection: " + name);
+            }
+        });
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    try {
+        List<String> names = db.collection("users").getCollections();
+        for (String name : names) {
+            System.out.println("Sub-collection: " + name);
+        }
+    } catch (ClorastoreException e) {
+        e.printStackTrace();
+    }
+    ```
+  </Tab>
+</Tabs>
