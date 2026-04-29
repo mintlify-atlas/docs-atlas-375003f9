@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "Clorabase",
-  "theme": "luma",
+  "name": "Clorabase docs",
+  "theme": "mint",
   "colors": {
-    "primary": "#2DA44E",
-    "light": "#39C25E",
-    "dark": "#1A7A33"
+    "primary": "#ff48e0",
+    "light": "#f64dff",
+    "dark": "#7a1a7a"
   },
   "navbar": {
     "primary": {
@@ -15,7 +15,10 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/Clorabase/Clorabase"
+      "github": "https://github.com/Clorabase/Clorabase",
+      "instagram": "https://instagram.com/x0.rahil",
+      "website": "https://clorabase.github.io",
+      "linkedin": "https://in.linkedin.com/in/devrahil"
     }
   },
   "navigation": {
@@ -96,5 +99,25 @@
         ]
       }
     ]
+  },
+  "description": "Clorabase is a free % open source backend (BaaS) alternative for Android/Java apps. Turn your GitHub repo into a NoSQL database and cloud storage for your app. Use database, storage, in-app messages, in-app updates and lot more",
+  "favicon": "/images/clorabase.png",
+  "seo": {
+    "indexing": "all"
+  },
+  "logo": "/images/clorabase.png",
+  "appearance": {
+    "default": "system"
+  },
+  "banner": {
+    "content": "Watch the repo for updates",
+    "dismissible": true
+  },
+  "thumbnails": {
+    "appearance": "light",
+    "background": "/images/clorabase-banner.png"
+  },
+  "icons": {
+    "library": "fontawesome"
   }
 }
