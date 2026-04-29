@@ -29,7 +29,8 @@
               "introduction",
               "quickstart",
               "setup"
-            ]
+            ],
+            "icon": "angles-right"
           },
           {
             "group": "Core Features",
@@ -39,21 +40,24 @@
               "database/querying",
               "storage/overview",
               "storage/files-blobs"
-            ]
+            ],
+            "icon": "microchip"
           },
           {
             "group": "Android Features",
             "pages": [
               "android/in-app-messaging",
               "android/in-app-updates"
-            ]
+            ],
+            "icon": "mobile"
           },
           {
             "group": "Console App",
             "pages": [
               "console/overview",
               "console/managing-data"
-            ]
+            ],
+            "icon": "mobile-retro"
           },
           {
             "group": "Reference",

@@ -1,6 +1,8 @@
 ---
 title: "Clorabase Java — entry point class"
 description: "Reference for the Clorabase Java SDK entry point: getInstance, getDatabase, getStorage, getConfig, and getAPIQuota with parameter types and return values."
+icon: "m"
+sidebarTitle: "Clorabase"
 ---
 
 `clorabase.sdk.java.Clorabase` is the singleton entry point for the Clorabase Java SDK. It handles authentication, reads your project's `config.json` from GitHub, and provides access to the database, storage, and quota APIs.
@@ -98,12 +100,15 @@ Returns the parsed `config.json` for the project. The config is loaded once duri
     <ResponseField name="project" type="string">
       The project name as stored in `config.json`.
     </ResponseField>
+
     <ResponseField name="username" type="string">
       The account username field. Declared in `Config` but not populated from `config.json` by the SDK — this field will be `null` unless set manually.
     </ResponseField>
+
     <ResponseField name="version" type="string">
       The SDK or project schema version declared in `config.json`.
     </ResponseField>
+
     <ResponseField name="isStorageConfigured" type="boolean">
       `true` if blob/release storage has been set up for this project. Corresponds to the `blobConfigured` key in `config.json`.
     </ResponseField>
@@ -133,9 +138,11 @@ Returns the current GitHub API rate limit state for the authenticated token. Rea
     <ResponseField name="remaining" type="int">
       Number of API requests remaining in the current window.
     </ResponseField>
+
     <ResponseField name="resetSeconds" type="long">
       Unix epoch seconds at which the rate limit window resets.
     </ResponseField>
+
     <ResponseField name="resetTime" type="Date">
       `java.util.Date` constructed from `resetSeconds * 1000`. Convenience field for human-readable reset time.
     </ResponseField>

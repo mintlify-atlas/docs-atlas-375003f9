@@ -1,6 +1,8 @@
 ---
 title: "Clorabase Console: manage your backend"
 description: "The Clorabase Console is an Android app for creating and managing Clorabase projects, browsing data, uploading files, and pushing messages."
+sidebarTitle: "About Console"
+icon: "info"
 ---
 
 ## What is the Clorabase Console?
@@ -13,7 +15,7 @@ It serves as the primary control panel for your Clorabase projects, providing vi
 
 The Console is distributed as part of the Clorabase project on GitHub. Clone or download the repository and build the `Console` module, or install the pre-built APK included in the project releases.
 
-```
+```text
 https://github.com/Clorabase/Clorabase
 ```
 
@@ -26,6 +28,7 @@ The Console authenticates via a **GitHub Personal Access Token (PAT)**. No separ
 3. Tap **Login**.
 
 On first login, the Console calls the GitHub API to:
+
 - Verify your token.
 - Create the `Clorabase-projects` repository in your GitHub account if it does not already exist. This repo is the persistent store for all project data.
 
@@ -36,7 +39,7 @@ Your token and GitHub username are saved to the app's `SharedPreferences` so tha
 After login, the home screen presents a scrollable list of **feature cards**. Each card navigates to the corresponding module:
 
 | Card | Module |
-|---|---|
+| --- | --- |
 | **Database** | Browse and edit NoSQL collections and documents |
 | **Storage** | Upload, download, and delete files |
 | **In-App Messaging** | Compose and send in-app messages |
@@ -49,7 +52,7 @@ A **Quota** entry is available from the navigation drawer to monitor your remain
 The Console supports multiple Clorabase projects under the same GitHub account.
 
 - The **active project** is shown in a dropdown in the top app bar. Tap it to switch to a different project.
-- Tap the **+** icon next to the dropdown to create a new project. Project names must be alphanumeric and may include underscores.
+- Tap the **\+** icon next to the dropdown to create a new project. Project names must be alphanumeric and may include underscores.
 - When creating a project you can optionally enable **blob storage** setup at the same time, which creates the required GitHub Release for large-file storage.
 - If your account has no projects yet, the Console opens the create-project dialog automatically on first login.
 

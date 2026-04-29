@@ -1,6 +1,8 @@
 ---
 title: "Security and encryption in Clorabase"
 description: "All Clorabase database documents are AES-128 encrypted before writing to GitHub. Understand the encryption model, key derivation, and token security practices."
+icon: "lock-keyhole"
+sidebarTitle: "Security and Encryption"
 ---
 
 Clorabase encrypts every database document with AES-128 before pushing it to your GitHub repository. Even if someone gains read access to your `Clorabase-projects` repo, they cannot read your database content without your GitHub token.
@@ -8,7 +10,7 @@ Clorabase encrypts every database document with AES-128 before pushing it to you
 ## Encryption details
 
 | Property | Value |
-|---|---|
+| --- | --- |
 | Algorithm | AES-128 |
 | Key derivation | PBKDF2WithHmacSHA256 |
 | Password | Your GitHub Personal Access Token |

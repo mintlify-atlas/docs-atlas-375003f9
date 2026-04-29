@@ -1,6 +1,8 @@
 ---
 title: "In-app updates for Android with Clorabase"
 description: "Prompt Android users to update apps distributed outside the Play Store. Push version.json to GitHub to trigger flexible or urgent update dialogs in your app."
+icon: "square-info"
+sidebarTitle: "In-App Updates"
 ---
 
 ## Overview
@@ -15,13 +17,13 @@ No Play Store integration is required.
 
 Place your version metadata at:
 
-```
+```text
 <project>/updates/<package.name>/version.json
 ```
 
 For example, if your package name is `com.example.myapp` and your project is `my-project`:
 
-```
+```text
 my-project/updates/com.example.myapp/version.json
 ```
 
@@ -41,7 +43,7 @@ my-project/updates/com.example.myapp/version.json
 ```
 
 | Field | Type | Description |
-|-------|------|-------------|
+| --- | --- | --- |
 | `code` | `int` | The new version code. Compared against the app's `versionCode`. The update dialog is shown only when this value is **greater than** the installed version code. |
 | `name` | `string` | Human-readable version name (e.g. `"1.2.0"`). Not used in comparison logic; informational only. |
 | `downloadUrl` | `string` | Direct URL to the APK file. Opened in a browser when the user taps **Update**. |
@@ -58,7 +60,7 @@ my-project/updates/com.example.myapp/version.json
 Shows an **Update available** dialog. The user can choose to update now or dismiss it and continue using the app.
 
 - Title: **Update available**
-- Message: *A new version is available. Update now to get better and uninterrupted experience.*
+- Message: _A new version is available. Update now to get better and uninterrupted experience._
 - Buttons: **Update** (opens `downloadUrl`) | **Later** (dismisses dialog)
 - Cancelable: yes
 
@@ -67,7 +69,7 @@ Shows an **Update available** dialog. The user can choose to update now or dismi
 Shows an **Update needed** dialog. The user cannot dismiss it and must either update or exit the app. Use this when an older version is no longer functional.
 
 - Title: **Update needed**
-- Message: *This version of the application has expired and is no longer working. Please update to the latest version to continue using the app.*
+- Message: _This version of the application has expired and is no longer working. Please update to the latest version to continue using the app._
 - Buttons: **Update** (opens `downloadUrl`) | **Exit** (closes the activity)
 - Cancelable: no
 

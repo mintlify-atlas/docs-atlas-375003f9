@@ -1,6 +1,8 @@
 ---
 title: "Get started with Clorabase"
 description: "Learn how to add Clorabase to your Android or Java project, initialize the SDK, and write your first database record in under 5 minutes."
+icon: "forward-fast"
+sidebarTitle: "Quick Start"
 ---
 
 Clorabase is distributed via [JitPack](https://jitpack.io). This guide walks you through adding the dependency and running your first read and write against a GitHub-backed NoSQL database.
@@ -11,7 +13,7 @@ Before you begin, make sure you have:
 
 - A GitHub account
 - A GitHub Personal Access Token with `repo` scope — see the [setup guide](/setup) for exact instructions
-- An Android project (minSdk 29+) or a Java project using Gradle
+- An Android project (minSdk 29\+) or a Java project using Gradle
 
 ## Add the dependency
 
@@ -80,7 +82,7 @@ Initialize the Clorabase singleton as early as possible — in your `Application
   <Tab title="Java">
     ```java Main.java
     import clorabase.sdk.java.Clorabase;
-
+    
     public class Main {
         public static void main(String[] args) throws Exception {
             Clorabase clorabase = Clorabase.getInstance(
@@ -95,7 +97,7 @@ Initialize the Clorabase singleton as early as possible — in your `Application
 </Tabs>
 
 <Warning>
-Never hardcode your GitHub token in production code or commit it to a public repository. If your token is exposed, GitHub will automatically revoke it. Store it securely — for example, in a local properties file excluded from version control.
+  Never hardcode your GitHub token in production code or commit it to a public repository. If your token is exposed, GitHub will automatically revoke it. Store it securely — for example, in a local properties file excluded from version control.
 </Warning>
 
 ## Write your first record
@@ -105,13 +107,13 @@ Never hardcode your GitHub token in production code or commit it to a public rep
     ```java
     // Get the database root collection
     ClorastoreCollection db = clorabase.getDatabase();
-
+    
     // Prepare data
     Map<String, Object> data = new HashMap<>();
     data.put("name", "Alice");
     data.put("score", 42);
     data.put("active", true);
-
+    
     // Write to users/user1
     db.collection("users").document("user1")
         .setData(data)
@@ -123,13 +125,13 @@ Never hardcode your GitHub token in production code or commit it to a public rep
     ```java
     // Get the database root collection
     Collection db = clorabase.getDatabase();
-
+    
     // Prepare data
     Map<String, Object> data = new HashMap<>();
     data.put("name", "Alice");
     data.put("score", 42);
     data.put("active", true);
-
+    
     try {
         // Write to users/user1
         db.collection("users").document("user1").setData(data);
@@ -173,12 +175,15 @@ Never hardcode your GitHub token in production code or commit it to a public rep
   <Card title="Database guide" icon="database" href="/database/overview">
     Learn about collections, documents, CRUD operations, and queries
   </Card>
+
   <Card title="Storage guide" icon="cloud" href="/storage/overview">
     Upload and download files using Clorabase Storage
   </Card>
+
   <Card title="Android features" icon="mobile" href="/android/in-app-messaging">
     In-app messaging and update prompts for Android
   </Card>
+
   <Card title="API reference" icon="code" href="/api/java/clorabase">
     Complete method reference for both SDKs
   </Card>

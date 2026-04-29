@@ -1,12 +1,14 @@
 ---
 title: "Browse and manage data in the Clorabase Console"
 description: "Use the Clorabase Console app to view collections, edit documents, upload files, send in-app messages, and push app update notifications."
+icon: "book"
+sidebarTitle: "Console Guide"
 ---
 
 The Clorabase Console provides dedicated screens for each backend service. Use it to browse and edit database documents, manage storage files, compose in-app messages, push version updates, and monitor your GitHub API quota — all without writing code.
 
 <Info>
-The Console is the recommended way to set up blob storage and manage messages and update metadata without writing any code. All operations that would otherwise require direct GitHub API calls or manual JSON editing are available through the Console UI.
+  The Console is the recommended way to set up blob storage and manage messages and update metadata without writing any code. All operations that would otherwise require direct GitHub API calls or manual JSON editing are available through the Console UI.
 </Info>
 
 ## Database
@@ -14,14 +16,17 @@ The Console is the recommended way to set up blob storage and manage messages an
 The Database screen provides a file-browser-style tree view over your project's NoSQL data.
 
 **Navigating data:**
+
 - The top level lists all collections in the active project.
 - Tapping a collection shows the documents it contains.
 
 **Creating collections:**
-- Tap the **+** button and enter a collection name.
+
+- Tap the **\+** button and enter a collection name.
 - The Console automatically seeds an `index` document inside the new collection so it registers as non-empty in the underlying storage.
 
 **Working with documents:**
+
 - Tap a document to view its fields.
 - Create new documents inside a collection.
 - Delete existing documents.
@@ -36,19 +41,21 @@ The Database screen provides a file-browser-style tree view over your project's 
 The Storage screen lets you manage files hosted in your project's GitHub-backed storage bucket.
 
 **Navigating files:**
+
 - Browse the directory tree of your storage bucket.
 - Tap a folder to navigate into it.
 
 **Uploading files:**
+
 - Upload a **regular file** (stored as a repository asset, subject to GitHub file-size limits).
 - Upload a **blob** (stored as a GitHub Release asset, suitable for larger binaries).
 
 **Downloading and deleting:**
+
 - Download any file or blob to your device.
 - Delete files or blobs from storage.
 
-**Blob storage setup:**
-Before uploading blobs, a GitHub Release must exist for the project. You can create this release during project creation by checking **Set-up blob storage**, or set it up later from the Storage screen. The release name matches the project name.
+**Blob storage setup:** Before uploading blobs, a GitHub Release must exist for the project. You can create this release during project creation by checking **Set-up blob storage**, or set it up later from the Storage screen. The release name matches the project name.
 
 ## In-App Messaging
 
@@ -57,7 +64,7 @@ The In-App Messaging screen lets you compose messages that appear inside your ap
 **Composing a message:**
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | **Title** | Headline text shown in the message |
 | **Body** | Main message content |
 | **Image** | URL to a remote image, or pick a local file from device |
@@ -66,6 +73,7 @@ The In-App Messaging screen lets you compose messages that appear inside your ap
 | **Style** | Visual template: `SIMPLE`, `COUPON`, or `PROMO` |
 
 **Managing messages:**
+
 - View all existing messages for the active project.
 - Delete messages that are no longer needed.
 
@@ -76,7 +84,7 @@ The In-App Updates screen manages version metadata that your app reads to determ
 **Pushing a new version:**
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | **Package name** | The app's package identifier (e.g. `com.example.myapp`) |
 | **Version code** | Integer version code of the new release |
 | **Version name** | Human-readable version string (e.g. `2.1.0`) |
@@ -84,6 +92,7 @@ The In-App Updates screen manages version metadata that your app reads to determ
 | **Mode** | `flexible` (background prompt) or `urgent` (immediate prompt) |
 
 **Managing version entries:**
+
 - View existing version records for all package names in the project.
 - Update a record to point to a newer release.
 - Delete a version entry to stop surfacing the update prompt.

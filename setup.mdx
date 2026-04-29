@@ -1,6 +1,8 @@
 ---
 title: "Authenticate with Clorabase"
 description: "Generate a GitHub Personal Access Token with repo scope, understand the Clorabase-projects repository structure, and securely store your token."
+icon: "lock"
+sidebarTitle: "Authentication"
 ---
 
 Clorabase uses a GitHub Personal Access Token (PAT) for both authentication and data access. The token is passed directly to `Clorabase.getInstance()` and is used to read and write files in the `Clorabase-projects` repository under your GitHub account.
@@ -23,6 +25,7 @@ Clorabase uses a GitHub Personal Access Token (PAT) for both authentication and 
     - **`workflow`** — Required if your project uses GitHub Actions
 
     If you plan to use blob storage (large files via GitHub Releases), also enable:
+
     - **`write:packages`** is not needed — blob storage uses repo releases, already covered by `repo` scope.
   </Step>
   <Step title="Generate and copy the token">
@@ -33,7 +36,7 @@ Clorabase uses a GitHub Personal Access Token (PAT) for both authentication and 
 </Steps>
 
 <Warning>
-Never commit your GitHub token to a public repository. GitHub automatically scans public repos and revokes any tokens it finds. For Android apps, store the token in a local `secrets.properties` file and exclude it from version control via `.gitignore`.
+  Never commit your GitHub token to a public repository. GitHub automatically scans public repos and revokes any tokens it finds. For Android apps, store the token in a local `secrets.properties` file and exclude it from version control via `.gitignore`.
 </Warning>
 
 ## How the repository is structured
@@ -42,7 +45,7 @@ When you call `Clorabase.getInstance()` for the first time with a new project na
 
 Inside `Clorabase-projects`, each project gets its own directory:
 
-```
+```text
 Clorabase-projects/
 └── my-project/
     ├── config.json          — Project metadata
@@ -94,7 +97,7 @@ System.out.println("Resets at: " + quota.resetTime);
 ```
 
 <Info>
-Database reads use GitHub's raw content CDN by default, which does not count against your API quota. Only writes and explicit `fetch()` calls (which bypass the CDN cache) consume API quota.
+  Database reads use GitHub's raw content CDN by default, which does not count against your API quota. Only writes and explicit `fetch()` calls (which bypass the CDN cache) consume API quota.
 </Info>
 
 ## Token security recommendations
@@ -105,5 +108,5 @@ Database reads use GitHub's raw content CDN by default, which does not count aga
 - If compromised, revoke the token immediately in GitHub settings and generate a new one
 
 <Tip>
-The GitHub token is also used as the encryption key for your database. This means even if someone gets read access to your `Clorabase-projects` repo, they cannot read your data without the token.
+  The GitHub token is also used as the encryption key for your database. This means even if someone gets read access to your `Clorabase-projects` repo, they cannot read your data without the token.
 </Tip>

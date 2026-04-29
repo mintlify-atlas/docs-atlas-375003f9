@@ -1,6 +1,8 @@
 ---
-title: "Collections and documents in Clorastore"
+title: "Collections and documents "
 description: "Navigate collections, reference documents, and perform CRUD operations including setData, update, put, addItem, and delete in the Clorabase NoSQL database."
+icon: "pen"
+sidebarTitle: "CRUD Operations"
 ---
 
 ## Navigation
@@ -18,7 +20,7 @@ Collection admins = db.collection("users").collection("admins");
 ```
 
 <Warning>
-Collection names must be **alphanumeric only**. Spaces, slashes, dots, and underscores are not allowed and will throw an `IllegalArgumentException`.
+  Collection names must be **alphanumeric only**. Spaces, slashes, dots, and underscores are not allowed and will throw an `IllegalArgumentException`.
 </Warning>
 
 ### Navigate by path
@@ -30,7 +32,7 @@ Use `collectionAt()` and `documentAt()` when you already have the full path as a
     ```java
     // Navigate to a nested collection by path
     ClorastoreCollection admins = db.collectionAt("users/admins");
-
+    
     // Navigate to a specific document by full path (must end in .doc)
     ClorastoreDocument admin = db.documentAt("users/admins/admin1.doc");
     ```
@@ -39,7 +41,7 @@ Use `collectionAt()` and `documentAt()` when you already have the full path as a
     ```java
     // Navigate to a nested collection by path
     Collection admins = db.collectionAt("users/admins");
-
+    
     // Navigate to a specific document by full path (must end in .doc)
     Document admin = db.documentAt("users/admins/admin1.doc");
     ```
@@ -47,7 +49,7 @@ Use `collectionAt()` and `documentAt()` when you already have the full path as a
 </Tabs>
 
 <Note>
-The path passed to `documentAt()` must end with `.doc`. Paths passed to `collectionAt()` must not include a `.doc` suffix.
+  The path passed to `documentAt()` must end with `.doc`. Paths passed to `collectionAt()` must not include a `.doc` suffix.
 </Note>
 
 ### Navigate to a document
@@ -66,7 +68,7 @@ The path passed to `documentAt()` must end with `.doc`. Paths passed to `collect
 </Tabs>
 
 <Note>
-Document names are automatically **lowercased and trimmed**. `"User1"` and `"user1"` resolve to the same document.
+  Document names are automatically **lowercased and trimmed**. `"User1"` and `"user1"` resolve to the same document.
 </Note>
 
 ---
@@ -139,7 +141,7 @@ Creates or completely overwrites a document with the provided map.
     userData.put("name", "Alice");
     userData.put("score", 42);
     userData.put("active", true);
-
+    
     db.collection("users").document("alice").setData(userData)
         .addOnSuccessListener(unused -> Log.d("Clorastore", "Document written"))
         .addOnFailureListener(e -> Log.e("Clorastore", "Write failed", e));
@@ -151,7 +153,7 @@ Creates or completely overwrites a document with the provided map.
     userData.put("name", "Alice");
     userData.put("score", 42);
     userData.put("active", true);
-
+    
     try {
         db.collection("users").document("alice").setData(userData);
     } catch (ClorastoreException e) {
@@ -162,7 +164,7 @@ Creates or completely overwrites a document with the provided map.
 </Tabs>
 
 <Warning>
-`setData()` **overwrites** the entire document. Any fields not present in the new map are lost. Use `update()` to preserve existing fields.
+  `setData()` **overwrites** the entire document. Any fields not present in the new map are lost. Use `update()` to preserve existing fields.
 </Warning>
 
 ### update()
@@ -175,7 +177,7 @@ Merges the provided fields into the existing document. Fields in the map are add
     Map<String, Object> changes = new HashMap<>();
     changes.put("score", 99);
     changes.put("level", 5);
-
+    
     db.collection("users").document("alice").update(changes)
         .addOnSuccessListener(unused -> Log.d("Clorastore", "Updated"));
     ```
@@ -185,7 +187,7 @@ Merges the provided fields into the existing document. Fields in the map are add
     Map<String, Object> changes = new HashMap<>();
     changes.put("score", 99);
     changes.put("level", 5);
-
+    
     try {
         db.collection("users").document("alice").update(changes);
     } catch (ClorastoreException e) {
@@ -219,9 +221,9 @@ Writes or updates a single field. If the document does not exist, it is created.
 </Tabs>
 
 <Warning>
-`put()` enforces a **5-second cooldown** between successive calls on the same document. Calling it again within 5 seconds throws a `ClorastoreException` with reason `TOO_MANY_REQUESTS`. Use `update()` when writing multiple fields at once to avoid this limit.
+  `put()` enforces a **5-second cooldown** between successive calls on the same document. Calling it again within 5 seconds throws a `ClorastoreException` with reason `TOO_MANY_REQUESTS`. Use `update()` when writing multiple fields at once to avoid this limit.
 
-Field names for `put()` may only contain letters, numbers, and underscores (`_`).
+  Field names for `put()` may only contain letters, numbers, and underscores (`_`).
 </Warning>
 
 ### addItem()
@@ -318,7 +320,7 @@ Deletes a named document from within a collection reference.
 </Tabs>
 
 <Note>
-You cannot delete a collection through the SDK. To remove a collection, delete it manually from the GitHub repository.
+  You cannot delete a collection through the SDK. To remove a collection, delete it manually from the GitHub repository.
 </Note>
 
 ---

@@ -1,6 +1,8 @@
 ---
 title: "Clorabase Storage: file storage overview"
 description: "Clorabase Storage stores files directly in your GitHub repository or as Release assets for large files. Learn about the two storage tiers."
+icon: "store"
+sidebarTitle: "Clorabase storage"
 ---
 
 Clorabase Storage gives every project a file system backed by its GitHub repository. Files live under `<project>/storage/` in the repo and are organized into directories you navigate with the SDK.
@@ -20,8 +22,8 @@ Every `directory()` call returns a new `ClorabaseStorage` scoped to that path. S
 
 Clorabase Storage has two distinct tiers depending on file size.
 
-| | Regular files | Blob files |
-|---|---|---|
+|  | Regular files | Blob files |
+| --- | --- | --- |
 | **How stored** | Base64-encoded content committed directly to the GitHub repo | Uploaded as GitHub Release assets; a small `.ptr` pointer file is committed to the repo |
 | **Upload method** | `addFile()` / `uploadFile()` | `uploadBlob()` |
 | **Download method** | `getFile()` | `getBlobStream()` / `getBlobDownloadURL()` |
@@ -36,7 +38,7 @@ Regular files are committed to the GitHub repository as base64-encoded content. 
 - `uploadFile(InputStream, String, ProgressListener)` — streams the upload with progress callbacks, supports files up to 50 MB. Files larger than 50 MB throw a `StorageException` with reason `FILE_TOO_LARGE`.
 
 <Warning>
-Committing large files directly to a GitHub repository grows the repo size permanently. Use blob storage for anything over a few megabytes.
+  Committing large files directly to a GitHub repository grows the repo size permanently. Use blob storage for anything over a few megabytes.
 </Warning>
 
 ### Blob files
@@ -49,7 +51,7 @@ Blob files are uploaded to a GitHub Release attached to your project. Clorabase 
 - `deleteBlob(String)` — deletes both the Release asset and the `.ptr` pointer file.
 
 <Info>
-Blob storage requires a GitHub Release to already exist for your project. Create one through the Clorabase Console app, or pass `configureStorage=true` when initializing the project programmatically.
+  Blob storage requires a GitHub Release to already exist for your project. Create one through the Clorabase Console app, or pass `configureStorage=true` when initializing the project programmatically.
 </Info>
 
 ## Navigating directories
@@ -75,6 +77,7 @@ No API call is made until you perform an operation on the returned reference.
   <Card title="Upload, download, and manage files" icon="file-arrow-up" href="/storage/files-blobs">
     Code examples for every storage operation: uploading regular files and blobs, downloading, listing, and deleting.
   </Card>
+
   <Card title="Console setup" icon="gear" href="/console">
     Create a GitHub Release for your project to enable blob storage.
   </Card>

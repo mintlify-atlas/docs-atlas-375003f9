@@ -1,6 +1,8 @@
 ---
 title: "In-app messaging for Android with Clorabase"
 description: "Show SIMPLE, COUPON, or PROMO dialogs to Android users by pushing message JSON to your GitHub repo. Supports expiry, show-once, and custom click handlers."
+icon: "message"
+sidebarTitle: "In-App Messaging"
 ---
 
 ## Overview
@@ -16,7 +18,7 @@ Messages are sorted by `timestamp` (newest first) and shown in a queue. The SDK 
 Each message declares a `style` field that controls the dialog layout.
 
 | Style | Appearance |
-|-------|-----------|
+| --- | --- |
 | `SIMPLE` | Centered card dialog with a blue primary button. Dismissible by tapping outside. |
 | `COUPON` | Image banner at the top, green primary button, and a secondary **Close** button. Not dismissible by tapping outside. |
 | `PROMO` | Orange header bar with a product image and a floating **X** dismiss button. Not dismissible by tapping outside. |
@@ -28,7 +30,7 @@ Each message declares a `style` field that controls the dialog layout.
 Each message is a JSON file stored in `<project>/messages/`. The following fields are supported:
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| --- | --- | --- | --- |
 | `title` | `string` | Yes | Heading text shown at the top of the dialog. |
 | `message` | `string` | Yes | Body text of the dialog. |
 | `image` | `string` | No | URL of an image to display in the dialog (loaded at fetch time). |

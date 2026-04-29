@@ -1,6 +1,8 @@
 ---
 title: "Upload, download, and manage files in Clorabase"
 description: "Learn how to upload regular files and large blobs, download file contents, list directory entries, and delete files from Clorabase Storage."
+icon: "book"
+sidebarTitle: "Storage Guide"
 ---
 
 This page covers every storage operation available in the Clorabase SDK. For a conceptual overview of the two storage tiers, see [Clorabase Storage overview](/storage/overview).
@@ -33,14 +35,14 @@ All operations start from a `ClorabaseStorage` reference. Use `directory()` to s
 Use `addFile()` when the content is already in memory as a byte array. This is synchronous in the Java SDK and returns a `Task<Void>` in Android.
 
 <Warning>
-GitHub encodes committed content as base64, which inflates size by ~33 %. Keep `addFile()` usage under ~1 MB to stay well within GitHub's content API limits.
+  GitHub encodes committed content as base64, which inflates size by ~33 %. Keep `addFile()` usage under ~1 MB to stay well within GitHub's content API limits.
 </Warning>
 
 <Tabs>
   <Tab title="Android">
     ```java
     byte[] data = "Hello, Clorabase!".getBytes();
-
+    
     storage.addFile(data, "hello.txt")
         .addOnSuccessListener(unused -> Log.d("Storage", "File added"))
         .addOnFailureListener(e -> Log.e("Storage", "Upload failed", e));
@@ -49,7 +51,7 @@ GitHub encodes committed content as base64, which inflates size by ~33 %. Keep `
   <Tab title="Java">
     ```java
     byte[] data = "Hello, Clorabase!".getBytes();
-
+    
     try {
         storage.addFile(data, "hello.txt");
     } catch (StorageException e) {
@@ -64,26 +66,26 @@ GitHub encodes committed content as base64, which inflates size by ~33 %. Keep `
 Use `uploadFile()` to stream a file from an `InputStream` with live progress callbacks. The file must be under 50 MB.
 
 <Note>
-The Android `ProgressListener.onComplete()` takes no parameters. The Java `ProgressListener.onComplete(String result)` receives the raw API response string from GitHub.
+  The Android `ProgressListener.onComplete()` takes no parameters. The Java `ProgressListener.onComplete(String result)` receives the raw API response string from GitHub.
 </Note>
 
 <Tabs>
   <Tab title="Android">
     ```java
     InputStream fileStream = getContentResolver().openInputStream(fileUri);
-
+    
     storage.uploadFile(fileStream, "photo.jpg", new ProgressListener() {
         @Override
         public void onProgress(long bytesRead, long totalBytes) {
             int percent = (int) (bytesRead * 100 / totalBytes);
             progressBar.setProgress(percent);
         }
-
+    
         @Override
         public void onComplete() {
             Toast.makeText(context, "Upload complete", Toast.LENGTH_SHORT).show();
         }
-
+    
         @Override
         public void onError(Exception e) {
             Log.e("Storage", "Upload failed", e);
@@ -94,18 +96,18 @@ The Android `ProgressListener.onComplete()` takes no parameters. The Java `Progr
   <Tab title="Java">
     ```java
     InputStream fileStream = new FileInputStream("photo.jpg");
-
+    
     storage.uploadFile(fileStream, "photo.jpg", new ProgressListener() {
         @Override
         public void onProgress(long bytesRead, long totalBytes) {
             System.out.printf("Progress: %d / %d bytes%n", bytesRead, totalBytes);
         }
-
+    
         @Override
         public void onComplete(String result) {
             System.out.println("Upload complete. Response: " + result);
         }
-
+    
         @Override
         public void onError(Exception e) {
             System.err.println("Upload failed: " + e.getMessage());
@@ -116,7 +118,7 @@ The Android `ProgressListener.onComplete()` takes no parameters. The Java `Progr
 </Tabs>
 
 <Warning>
-Passing a stream whose available bytes exceed 50 MB throws a `StorageException` with reason `FILE_TOO_LARGE`. Use `uploadBlob()` instead for large files.
+  Passing a stream whose available bytes exceed 50 MB throws a `StorageException` with reason `FILE_TOO_LARGE`. Use `uploadBlob()` instead for large files.
 </Warning>
 
 ## Upload a blob (large file)
@@ -124,26 +126,26 @@ Passing a stream whose available bytes exceed 50 MB throws a `StorageException` 
 `uploadBlob()` uploads the file as a GitHub Release asset, then writes a `.ptr` pointer file into the repo directory. This consumes two GitHub API calls per upload.
 
 <Info>
-A GitHub Release must exist for your project before calling `uploadBlob()`. See the [storage overview](/storage/overview) for setup instructions.
+  A GitHub Release must exist for your project before calling `uploadBlob()`. See the [storage overview](/storage/overview) for setup instructions.
 </Info>
 
 <Tabs>
   <Tab title="Android">
     ```java
     InputStream videoStream = getContentResolver().openInputStream(videoUri);
-
+    
     storage.uploadBlob(videoStream, "intro.mp4", new ProgressListener() {
         @Override
         public void onProgress(long bytesRead, long totalBytes) {
             int percent = (int) (bytesRead * 100 / totalBytes);
             progressBar.setProgress(percent);
         }
-
+    
         @Override
         public void onComplete() {
             Toast.makeText(context, "Blob uploaded", Toast.LENGTH_SHORT).show();
         }
-
+    
         @Override
         public void onError(Exception e) {
             Log.e("Storage", "Blob upload failed", e);
@@ -154,19 +156,19 @@ A GitHub Release must exist for your project before calling `uploadBlob()`. See 
   <Tab title="Java">
     ```java
     InputStream videoStream = new FileInputStream("intro.mp4");
-
+    
     storage.uploadBlob(videoStream, "intro.mp4", new ProgressListener() {
         @Override
         public void onProgress(long bytesRead, long totalBytes) {
             System.out.printf("Progress: %d / %d bytes%n", bytesRead, totalBytes);
         }
-
+    
         @Override
         public void onComplete(String result) {
             // result is the browser_download_url of the uploaded asset
             System.out.println("Blob available at: " + result);
         }
-
+    
         @Override
         public void onError(Exception e) {
             System.err.println("Blob upload failed: " + e.getMessage());
@@ -177,7 +179,7 @@ A GitHub Release must exist for your project before calling `uploadBlob()`. See 
 </Tabs>
 
 <Note>
-Clorabase automatically appends `.ptr` to the `fileName` argument when creating the pointer file. You do not need to include it when calling `uploadBlob()`.
+  Clorabase automatically appends `.ptr` to the `fileName` argument when creating the pointer file. You do not need to include it when calling `uploadBlob()`.
 </Note>
 
 ## Download a regular file
@@ -243,7 +245,7 @@ Returns an `InputStream` connected directly to the GitHub Release asset. In Andr
 Returns a `java.net.URL` pointing directly at the Release asset. Useful when you need to hand a URL to a media player or download manager rather than reading the bytes yourself.
 
 <Note>
-`getBlobDownloadURL()` is available in the Java SDK only. The Android SDK exposes `getBlobStream()` for async access.
+  `getBlobDownloadURL()` is available in the Java SDK only. The Android SDK exposes `getBlobStream()` for async access.
 </Note>
 
 ```java
@@ -256,7 +258,7 @@ try {
 ```
 
 <Warning>
-Passing a file name that does not end in `.ptr` to either `getBlobStream()` or `getBlobDownloadURL()` throws an `IllegalArgumentException` immediately, before any network call is made.
+  Passing a file name that does not end in `.ptr` to either `getBlobStream()` or `getBlobDownloadURL()` throws an `IllegalArgumentException` immediately, before any network call is made.
 </Warning>
 
 ## List files
@@ -334,5 +336,5 @@ Passing a file name that does not end in `.ptr` to either `getBlobStream()` or `
 </Tabs>
 
 <Warning>
-`deleteBlob()` is irreversible. The Release asset is permanently removed from GitHub and cannot be recovered.
+  `deleteBlob()` is irreversible. The Release asset is permanently removed from GitHub and cannot be recovered.
 </Warning>

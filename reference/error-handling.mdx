@@ -1,6 +1,8 @@
 ---
 title: "Error handling in Clorabase"
 description: "Clorabase throws ClorastoreException with a typed Reason enum. Learn how to catch and handle database and storage errors in both SDKs."
+icon: "e"
+sidebarTitle: "Error handling"
 ---
 
 Clorabase signals errors through `ClorastoreException`, a checked exception that exposes a `Reason` enum via `getReason()`. Storage operations throw `StorageException`, which extends `ClorastoreException`. Both SDKs use the same exception types — the Android SDK surfaces them through `Task.addOnFailureListener`.
@@ -8,7 +10,7 @@ Clorabase signals errors through `ClorastoreException`, a checked exception that
 ## Reason enum values
 
 | Name | Description |
-|---|---|
+| --- | --- |
 | `INVALID_DATATYPE` | A value type not supported by Clorastore was used. Nested `Map` values are not allowed. |
 | `TOO_MANY_REQUESTS` | The GitHub API quota has been exhausted (5,000 requests/hour). |
 | `DOCUMENT_SIZE_EXCEEDED` | The document exceeds the 2 MB size limit. |

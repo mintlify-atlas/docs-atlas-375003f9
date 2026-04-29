@@ -1,6 +1,8 @@
 ---
-title: "Query documents in Clorastore"
+title: "Query documents"
 description: "Use Clorastore's client-side query engine to filter, sort, and retrieve documents from a collection using predicates and comparisons."
+icon: "magnifying-glass"
+sidebarTitle: "Querying"
 ---
 
 ## How queries work
@@ -14,7 +16,7 @@ Clorastore does not have a server-side query engine. When you execute a query, t
 This means query performance scales linearly with the number of documents in the collection. Results are not paginated automatically.
 
 <Warning>
-Queries on large collections will be slow because every document must be fetched individually. Keep frequently queried collections small, and split data across sub-collections where possible.
+  Queries on large collections will be slow because every document must be fetched individually. Keep frequently queried collections small, and split data across sub-collections where possible.
 </Warning>
 
 ## Creating a query
@@ -187,7 +189,7 @@ Returns up to `limit` documents sorted in **ascending order** by a numeric field
 </Tabs>
 
 <Note>
-`orderBy()` sorts in ascending order. To get the highest values first, reverse the resulting list after the call.
+  `orderBy()` sorts in ascending order. To get the highest values first, reverse the resulting list after the call.
 </Note>
 
 ---
@@ -217,7 +219,7 @@ Returns up to `limit` documents sorted in **ascending order** by a numeric field
     try {
         List<Document> qualifiers = db.collection("leaderboard").query()
             .whereGreater("score", 100);
-
+    
         for (Document doc : qualifiers) {
             Map<String, Object> data = doc.getData();
             System.out.println(data.get("username") + ": " + data.get("score"));
@@ -250,7 +252,7 @@ Returns up to `limit` documents sorted in **ascending order** by a numeric field
     try {
         List<Document> top5 = db.collection("leaderboard").query()
             .orderBy("score", 5);
-
+    
         Collections.reverse(top5); // ascending → descending
         for (Document doc : top5) {
             System.out.println("Top user: " + doc.name);

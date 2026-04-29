@@ -1,6 +1,8 @@
 ---
 title: "Clorastore: NoSQL database overview"
 description: "Clorastore stores encrypted JSON documents in GitHub repositories. Learn how the database is structured and what operations are supported."
+icon: "database"
+sidebarTitle: "Clorastore DB"
 ---
 
 Clorastore is the NoSQL database component of the Clorabase SDK. It stores data as AES-128 encrypted JSON files (`.doc`) inside your `Clorabase-projects` GitHub repository, under the `<project>/db/` path. There is no separate database server — GitHub is the backend.
@@ -12,7 +14,7 @@ Clorastore uses a hierarchical model of **collections** and **documents**, simil
 - A **collection** is a named container that holds documents and/or sub-collections.
 - A **document** is a single encrypted JSON file (e.g., `user1.doc`) that stores a flat map of key-value pairs.
 
-```
+```text
 Clorabase-projects/
 └── <your-project>/
     └── db/
@@ -30,7 +32,7 @@ Collections can be nested arbitrarily deep. You navigate the hierarchy by chaini
 Documents store flat key-value maps. Supported value types are:
 
 | Type | Examples |
-|---|---|
+| --- | --- |
 | `String` | `"hello"` |
 | `Number` | `42`, `3.14` |
 | `Boolean` | `true`, `false` |
@@ -38,13 +40,13 @@ Documents store flat key-value maps. Supported value types are:
 | `null` | field is removed on next write |
 
 <Warning>
-Nested maps (objects inside objects) are **not** supported as field values. Flatten your data structure or use sub-collections instead.
+  Nested maps (objects inside objects) are **not** supported as field values. Flatten your data structure or use sub-collections instead.
 </Warning>
 
 ## Key constraints
 
 | Constraint | Value |
-|---|---|
+| --- | --- |
 | Maximum document size | 2 MB (after encryption) |
 | Cooldown between `put()` calls | 5 seconds |
 | Query execution | Client-side only (all documents fetched, then filtered in-memory) |
@@ -62,7 +64,7 @@ The **Android SDK** (`Clorabase4A`) wraps every operation in a `Task<T>` (from G
     ```java
     // All methods return Task<T> — attach listeners on the main thread
     ClorastoreDocument doc = db.collection("users").document("user1");
-
+    
     doc.getData().addOnSuccessListener(data -> {
         String name = (String) data.get("name");
     }).addOnFailureListener(e -> {
@@ -90,6 +92,7 @@ The **Android SDK** (`Clorabase4A`) wraps every operation in a `Task<T>` (from G
   <Card title="Collections and documents" icon="database" href="/database/collections-documents">
     Navigate the hierarchy and perform CRUD operations on collections and documents.
   </Card>
+
   <Card title="Querying" icon="filter" href="/database/querying">
     Filter, compare, and sort documents using the client-side query engine.
   </Card>

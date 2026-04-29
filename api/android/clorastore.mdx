@@ -1,13 +1,15 @@
 ---
 title: "ClorastoreCollection and ClorastoreDocument — Android SDK"
 description: "Reference for ClorastoreCollection, ClorastoreDocument, and ClorastoreQuery in the Android SDK. All async methods return Task and dispatch on the main thread."
+icon: "folder"
+sidebarTitle: "ClorstoreCollection"
 ---
 
 ## Overview
 
 Clorastore is the document database layer of the Clorabase Android SDK. The hierarchy mirrors a file system:
 
-```
+```text
 root (ClorastoreCollection)
  └── collection("users")          ← ClorastoreCollection
       └── document("alice")       ← ClorastoreDocument
@@ -38,7 +40,7 @@ public ClorastoreCollection collection(String name)
 Navigates into a named sub-collection. Creates the collection lazily on first write.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `name` | `String` | The name of the sub-collection. |
 
 **Returns** — `ClorastoreCollection` for the named sub-collection.
@@ -54,7 +56,7 @@ public ClorastoreDocument document(String name)
 Returns a reference to a named document within this collection. If the document does not exist it will be created on the first write operation.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `name` | `String` | The name of the document. |
 
 **Returns** — `ClorastoreDocument` reference.
@@ -104,7 +106,7 @@ public Task<Void> delete(String name)
 Deletes the named document from this collection.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `name` | `String` | The name of the document to delete. |
 
 **Returns** — `Task<Void>` that completes when deletion is done.
@@ -160,7 +162,7 @@ public Task<Void> setData(Map<String, Object> data)
 Overwrites the entire document with the provided map. Any fields not in `data` are removed.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `data` | `Map<String, Object>` | The complete new content of the document. |
 
 **Returns** — `Task<Void>` that completes when the write is done.
@@ -176,7 +178,7 @@ public Task<Void> update(Map<String, Object> fields)
 Merges the provided fields into the document. Existing fields not present in `fields` are left unchanged.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `fields` | `Map<String, Object>` | Fields to add or overwrite. |
 
 **Returns** — `Task<Void>` that completes when the update is done.
@@ -192,7 +194,7 @@ public Task<Void> put(String key, Object value)
 Adds or overwrites a single field in the document.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `key` | `String` | The field name. |
 | `value` | `Object` | The value to set. |
 
@@ -209,7 +211,7 @@ public Task<Void> addItem(String list, Object value)
 Appends `value` to a list field named `list`. The field must already be a list type; it is created as a new list if it doesn't exist.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `list` | `String` | The name of the list field. |
 | `value` | `Object` | The item to append. |
 
@@ -226,7 +228,7 @@ public Task<Void> removeItem(String key)
 Removes the field with the given key from the document.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `key` | `String` | The field name to remove. |
 
 **Returns** — `Task<Void>` that completes when the field is removed.
@@ -260,7 +262,7 @@ public Task<List<ClorastoreDocument>> where(Predicate<Map<String, Object>> condi
 Returns documents for which `condition` evaluates to `true`.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `condition` | `Predicate<Map<String, Object>>` | A lambda that receives each document's data map and returns `true` to include it. |
 
 ```java
@@ -281,7 +283,7 @@ public Task<List<ClorastoreDocument>> whereGreater(String field, Number value)
 Returns documents where `field` is numerically greater than `value`.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `field` | `String` | The numeric field to compare. |
 | `value` | `Number` | The lower bound (exclusive). |
 
@@ -296,7 +298,7 @@ public Task<List<ClorastoreDocument>> whereLess(String field, Number value)
 Returns documents where `field` is numerically less than `value`.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `field` | `String` | The numeric field to compare. |
 | `value` | `Number` | The upper bound (exclusive). |
 
@@ -311,7 +313,7 @@ public Task<List<ClorastoreDocument>> whereEqual(String field, Object value)
 Returns documents where `field` equals `value` (uses `.equals()` comparison).
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `field` | `String` | The field to compare. |
 | `value` | `Object` | The expected value. |
 
@@ -326,7 +328,7 @@ public Task<List<ClorastoreDocument>> orderBy(String field, int limit)
 Returns up to `limit` documents sorted in ascending order by `field`.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --- | --- | --- |
 | `field` | `String` | The field to sort by. |
 | `limit` | `int` | Maximum number of documents to return. |
 
