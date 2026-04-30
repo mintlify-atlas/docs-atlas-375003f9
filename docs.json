@@ -3,9 +3,9 @@
   "name": "Clorabase docs",
   "theme": "mint",
   "colors": {
-    "primary": "#ff48e0",
-    "light": "#f64dff",
-    "dark": "#7a1a7a"
+    "primary": "#ff0093",
+    "light": "#ff2ec5",
+    "dark": "#b6049b"
   },
   "navbar": {
     "primary": {
@@ -110,7 +110,7 @@
     "default": "system"
   },
   "banner": {
-    "content": "Watch the repo for updates",
+    "content": "W",
     "dismissible": true
   },
   "thumbnails": {
